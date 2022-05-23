@@ -30,19 +30,21 @@
     text-align: center;
     margin-top: -20px;
     font-family: NeueHelveticaBQ-Bold;
+    color: black;
   }
   
   .scoreHeader {
     text-align: center;
     font-family: NeueHelveticaBQ-Bold;
     line-height: 10%;
+    color: black;
   }
 
   .scoreDisplay {
     text-align: center;
     font-size: 25px;
     font-family: NeueHelveticaBQ-Bold;
-
+    color: black;
   }
   
   .close2 {

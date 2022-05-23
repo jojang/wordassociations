@@ -2,6 +2,7 @@ import './App.css';
 import { useState, useEffect } from "react"; 
 import Modal from './components/Modal';
 import End from './components/End';
+import DarkMode from './components/DarkMode';
 
 
 function App() {
@@ -153,6 +154,7 @@ function App() {
       {openEndModal && <End closeEndModal={setOpenendmodal} finalscore={finalScore} />}
       <div className="title">
         Word Associations
+        <DarkMode></DarkMode>
         <button 
           className='openModalBtn' 
           onClick={() => {
