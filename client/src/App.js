@@ -19,7 +19,6 @@ function App() {
   const[placeholder, setPlaceholder] = useState("");
   const[finalScore, setFinalscore] = useState(0);
   const[result, setResult] = useState("");
-  const[bestScore, setBestscore] = useState(0);
 
   let element = document.getElementById('user_guess');
 
@@ -65,9 +64,6 @@ function App() {
     fetch(`https://twinword-word-associations-v1.p.rapidapi.com/associations/?entry=${generate}`, options)
       .then(response => response.json())
       .then(response => {
-
-        console.log(response)
-        console.log(response.associations_scored)
         setWordlist(response.associations_array)
         setScorelist(response.associations_scored)
         setResult(response.result_msg)
