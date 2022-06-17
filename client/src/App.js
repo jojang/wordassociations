@@ -2,6 +2,11 @@ import './App.css';
 import { useState, useEffect } from "react"; 
 import Modal from './components/Modal';
 import End from './components/End';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import Switch from '@mui/material/Switch';
+
+
 
 
 function App() {
@@ -18,7 +23,13 @@ function App() {
   const[placeholder, setPlaceholder] = useState("");
   const[finalScore, setFinalscore] = useState(0);
   const[result, setResult] = useState("");
-  const[bestScore, setBestscore] = useState(0);
+  const[darkMode, setDarkmode] = useState(false);
+
+  const darkTheme = createTheme({
+    palette: {
+      mode: darkMode ? "dark" : "light",
+    },
+  });
 
   let element = document.getElementById('user_guess');
 
@@ -31,6 +42,7 @@ function App() {
   }
 
   useEffect(() => {
+
     if(result === 'Entry word not found'){
       changeWord()
       fetchdata();  
@@ -64,9 +76,6 @@ function App() {
     fetch(`https://twinword-word-associations-v1.p.rapidapi.com/associations/?entry=${generate}`, options)
       .then(response => response.json())
       .then(response => {
-
-        console.log(response)
-        console.log(response.associations_scored)
         setWordlist(response.associations_array)
         setScorelist(response.associations_scored)
         setResult(response.result_msg)
@@ -139,20 +148,28 @@ function App() {
   }
 
   function show() {
-    document.querySelector(".word").style.display = "none";
-    let x = document.getElementById("begin");
-    if (x.style.display === "none") {
-      x.style.display = "block";
+    let y = document.getElementById("user_guess");
+    if(darkMode === true){
+      y.style.color = "black";
+    }
+    else if(darkMode === false){
+      y.style.color = "white";
     }
   }
 
 
   return (
+  <ThemeProvider theme={darkTheme}>  
+    <CssBaseline />
     <div className="App">
       {openModal && <Modal closeModal={setOpenModal} />}
       {openEndModal && <End closeEndModal={setOpenendmodal} finalscore={finalScore} />}
       <div className="title">
         Word Associations
+        <Switch 
+          checked={darkMode} 
+          onChange={() => { setDarkmode(!darkMode); show() }} 
+          sx={{ marginLeft:"507px"}}/>
         <button 
           className='openModalBtn' 
           onClick={() => {
@@ -194,7 +211,7 @@ function App() {
 
 
     </div>
-    
+  </ThemeProvider>  
   );
 }
 
