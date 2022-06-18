@@ -1,6 +1,5 @@
 import React from 'react';
 import "./Modal.css";
-import DarkMode from './DarkMode';
 
 function Modal( { closeModal } ){
     return(

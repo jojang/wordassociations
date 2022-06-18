@@ -7,8 +7,6 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Switch from '@mui/material/Switch';
 
 
-
-
 function App() {
   const randomWords = require('random-words');
   const[guess, setGuess] = useState("");
