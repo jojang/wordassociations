@@ -30,19 +30,21 @@
     text-align: center;
     margin-top: -20px;
     font-family: NeueHelveticaBQ-Bold;
+    color: black;
   }
   
   .scoreHeader {
     text-align: center;
     font-family: NeueHelveticaBQ-Bold;
     line-height: 10%;
+    color: black;
   }
 
   .scoreDisplay {
     text-align: center;
     font-size: 25px;
     font-family: NeueHelveticaBQ-Bold;
-
+    color: black;
   }
   
   .close2 {
@@ -50,8 +52,8 @@
     font-family: NeueHelveticaBQ-Bold;
     letter-spacing: 2px;
     text-align: center;
-    width: 300px;
-    height: 50px;
+    width: 290px;
+    height: 60px;
     margin: 10px;
     border: none;
     background-color: rgb(0, 0, 0);
@@ -59,7 +61,7 @@
     border-radius: 8px;
     font-size: 20px;
     cursor: pointer;
-    margin-top: 30px;
+    margin-top: 15px;
   }
 
 button.close:hover {

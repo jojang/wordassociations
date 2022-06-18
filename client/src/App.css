@@ -7,6 +7,26 @@
   src: url("fonts/KarnakPro-CondensedBlack.ttf") format("truetype");
 }
 
+:root {
+  --black: rgb(0, 0, 0);
+  --white: rgb(236, 236, 236);
+}
+
+body {
+  background: var(--background-color);
+  color: var(--text-color);
+}
+
+body.light {
+  --background-color: var(--white);
+  --text-color: var(--black);
+}
+
+body.dark {
+  --background-color: var(--black);
+  --text-color: var(--white);
+}
+
 .App {
   text-align: center;
 }
@@ -15,7 +35,7 @@
   font-size: 30px;
   margin-top: 2px;
   letter-spacing: 1px;
-  margin-left: 80px;
+  margin-left: 630px;
 }
 .word{
   font-family: NeueHelveticaBQ-Bold;
@@ -42,7 +62,18 @@ input{
   height: 40%;
   font-size: 30px;
   letter-spacing: 1px;
+  color: var(--text-color);
 }
+
+input.dark{
+  --text-color: var(--white);
+
+}
+
+input.light{
+  --text-color: var(--black);
+}
+
 
 .error
 {
@@ -70,8 +101,8 @@ button.start:hover {
 }
 
 .openModalBtn{
-  width:30px;
-  height: 30px;
+  width:35px;
+  height: 35px;
   border-radius: 50%;
   font-size: 20px;
   font-weight: bold;
