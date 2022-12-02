@@ -40,6 +40,11 @@ function App() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    const changeWord = () => {
+      setGenerate(randomWords({ exactly: 1, min: 3 })[0]);
+    }
 
     if(result === 'Entry word not found'){
       changeWord()
@@ -49,11 +54,15 @@ function App() {
     else{
       document.getElementById("currWord").innerHTML = generate; 
       fetchdata();  
-      console.log(generate)
     }
-  },[generate, result, changeWord, fetchdata])
+  },[generate, result, randomWords, fetchdata])
 
   useEffect(() => {
+
+    const changeWord = () => {
+      setGenerate(randomWords({ exactly: 1, min: 3 })[0]);
+    }
+    console.log(wordlist)
 
     if(strikes === 0){
       document.getElementById('user_guess').disabled = true;
@@ -65,7 +74,7 @@ function App() {
       document.getElementById("currWord").innerHTML = generate; 
       document.getElementById('user_guess').disabled = false;
     }
-  }, [strikes, start, generate])
+  }, [strikes, start, generate, score, randomWords])
 
 
 
