@@ -51,7 +51,7 @@ function App() {
       fetchdata();  
       console.log(generate)
     }
-  },[generate, result])
+  },[generate, result, changeWord, fetchdata])
 
   useEffect(() => {
 
