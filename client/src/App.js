@@ -40,11 +40,6 @@ function App() {
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-
-    const changeWord = () => {
-      setGenerate(randomWords({ exactly: 1, min: 3 })[0]);
-    }
 
     if(result === 'Entry word not found'){
       changeWord()
@@ -54,16 +49,12 @@ function App() {
     else{
       document.getElementById("currWord").innerHTML = generate; 
       fetchdata();  
+      console.log(generate)
     }
-  },[generate, result, randomWords, fetchdata])
+  },[generate, result])
 
   useEffect(() => {
-
-    const changeWord = () => {
-      setGenerate(randomWords({ exactly: 1, min: 3 })[0]);
-    }
     console.log(wordlist)
-
     if(strikes === 0){
       document.getElementById('user_guess').disabled = true;
       setFinalscore(score)
@@ -74,7 +65,7 @@ function App() {
       document.getElementById("currWord").innerHTML = generate; 
       document.getElementById('user_guess').disabled = false;
     }
-  }, [strikes, start, generate, score, randomWords])
+  }, [strikes, start, score, generate])
 
 
 
@@ -171,20 +162,26 @@ function App() {
     <div className="App">
       {openModal && <Modal closeModal={setOpenModal} />}
       {openEndModal && <End closeEndModal={setOpenendmodal} finalscore={finalScore} />}
-      <div className="title">
-        Word Associations
-        <Switch 
+
+      <div className='titleContainer'>
+        <div className="title">Word Associations</div>
+
+        <div className='options'>
+          <Switch 
           checked={darkMode} 
           onChange={() => { setDarkmode(!darkMode); show() }} 
-          sx={{ marginLeft:"507px"}}/>
-        <button 
-          className='openModalBtn' 
-          onClick={() => {
-          setOpenModal(true);
-          }}>
-          ?
-        </button>
-      </div>
+          sx={{ marginLeft:""}}/>
+          <button 
+            className='openModalBtn' 
+            onClick={() => {
+            setOpenModal(true);
+            }}>
+            ?
+          </button>
+        </div>
+          
+      </div>   
+      
       <hr></hr>
 
       <div id="title_container">
