@@ -35,7 +35,7 @@ function App() {
       method: 'GET',
       headers: {
         'X-RapidAPI-Host': 'twinword-word-associations-v1.p.rapidapi.com',
-        'X-RapidAPI-Key': 'fdce1536aemshaf128813192334fp19b7f9jsn36ceeb410c9f'
+        'X-RapidAPI-Key': process.env.REACT_APP_RAPIDAPI_KEY
       }
   }
 
