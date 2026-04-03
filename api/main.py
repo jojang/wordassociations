@@ -1,10 +1,11 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
 from dotenv import load_dotenv
 
-from routes import word_associations, scores
+load_dotenv(Path(__file__).parent / ".env")
 
-load_dotenv()
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from routes import word_associations, scores
 
 app = FastAPI(title="Word Games API")
 
