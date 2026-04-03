@@ -99,9 +99,6 @@ button.openModalBtn:hover {
   background: #4a4f52;
 }
 
-.word{
-  display:none;
-}
 
 @keyframes shake {
   0% { margin-left: 0rem; }
