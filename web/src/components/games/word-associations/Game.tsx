@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Switch from '@mui/material/Switch';
 import { getAssociations } from '@/lib/api';
+import { useDarkMode } from '@/contexts/DarkModeContext';
 import RulesModal from './RulesModal';
 import EndModal from './EndModal';
 
@@ -15,8 +16,8 @@ const TIMER_DURATION = 15;
 type InputState = '' | 'error' | 'correct';
 
 export default function Game() {
+  const { darkMode, toggleDarkMode } = useDarkMode();
   const [started, setStarted] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [currentWord, setCurrentWord] = useState<string>(() => randomWords({ exactly: 1, min: 3 })[0]);
   const [guess, setGuess] = useState('');
   const [score, setScore] = useState(0);
@@ -128,7 +129,7 @@ export default function Game() {
         </Link>
         <span className="text-2xl tracking-wide" style={{ fontFamily: 'KarnakPro' }}>Word Associations</span>
         <div className="absolute right-6 flex items-center gap-2">
-          <Switch checked={darkMode} onChange={() => setDarkMode((d) => !d)} size="small" />
+          <Switch checked={darkMode} onChange={toggleDarkMode} size="small" />
           <button
             onClick={() => setShowRules(true)}
             className="w-8 h-8 rounded-full bg-black text-white font-bold hover:bg-gray-700 transition-colors"
