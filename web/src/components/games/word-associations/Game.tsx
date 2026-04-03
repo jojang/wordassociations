@@ -2,15 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { getAssociations } from '@/lib/api';
+import { generateWord, scoreGuess } from '@/lib/api';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import RulesModal from './RulesModal';
 import EndModal from './EndModal';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const randomWords = require('random-words');
-
 const TIMER_DURATION = 15;
+const STRIKES_MAX = 3;
 
 type InputState = '' | 'error' | 'correct';
 
@@ -18,20 +16,26 @@ export default function Game() {
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [currentWord, setCurrentWord] = useState<string>(() => randomWords({ exactly: 1, min: 3 })[0]);
+  const [currentWord, setCurrentWord] = useState('');
   const [guess, setGuess] = useState('');
   const [score, setScore] = useState(0);
-  const [strikes, setStrikes] = useState(3);
+  const [strikes, setStrikes] = useState(STRIKES_MAX);
   const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
-  const [wordList, setWordList] = useState<string[]>([]);
-  const [scoreList, setScoreList] = useState<Record<string, number>>({});
   const [inputState, setInputState] = useState<InputState>('');
   const [finalScore, setFinalScore] = useState(0);
   const [showRules, setShowRules] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
 
-  const nextWord = useCallback(() => {
-    setCurrentWord(randomWords({ exactly: 1, min: 3 })[0]);
+  const fetchNextWord = useCallback(async () => {
+    setLoading(true);
+    try {
+      const word = await generateWord();
+      setCurrentWord(word);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const flashInput = useCallback((state: InputState) => {
@@ -39,31 +43,19 @@ export default function Game() {
     setTimeout(() => setInputState(''), 500);
   }, []);
 
-  const endGame = useCallback((finalScore: number) => {
-    setFinalScore(finalScore);
+  const endGame = useCallback((final: number) => {
+    setFinalScore(final);
     setScore(0);
-    setStrikes(3);
+    setStrikes(STRIKES_MAX);
     setTimeLeft(TIMER_DURATION);
     setShowEnd(true);
-    nextWord();
-  }, [nextWord]);
+    fetchNextWord();
+  }, [fetchNextWord]);
 
-  // Fetch associations whenever the current word changes — pauses timer while loading
+  // Fetch first word when game starts
   useEffect(() => {
-    if (!started) return;
-    setLoading(true);
-    getAssociations(currentWord)
-      .then((data) => {
-        if (data.result_msg === 'Entry word not found') {
-          nextWord();
-        } else {
-          setWordList(data.associations_array);
-          setScoreList(data.associations_scored);
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [currentWord, started, nextWord]);
+    if (started) fetchNextWord();
+  }, [started, fetchNextWord]);
 
   // Countdown timer — paused while loading or end modal is open
   useEffect(() => {
@@ -82,25 +74,33 @@ export default function Game() {
     endGame(score);
   }, [strikes, started, score, endGame]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter' || loading) return;
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter' || loading || !currentWord) return;
 
-    if (guess === '') {
+    if (guess.trim() === '') {
       flashInput('error');
       return;
     }
 
-    if (wordList.includes(guess)) {
-      flashInput('correct');
-      setScore((s) => s + Math.round((scoreList[guess] ?? 0) * 10000));
-      setGuess('');
-      setStrikes(3);
-      setTimeLeft(TIMER_DURATION);
-      nextWord();
-    } else {
-      flashInput('error');
-      setStrikes((s) => s - 1);
-      setGuess('');
+    setLoading(true);
+    try {
+      const result = await scoreGuess(currentWord, guess.trim());
+      if (result.correct) {
+        flashInput('correct');
+        setScore((s) => s + result.score);
+        setGuess('');
+        setStrikes(STRIKES_MAX);
+        setTimeLeft(TIMER_DURATION);
+        await fetchNextWord();
+      } else {
+        flashInput('error');
+        setStrikes((s) => s - 1);
+        setGuess('');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -121,7 +121,7 @@ export default function Game() {
         <EndModal
           darkMode={darkMode}
           finalScore={finalScore}
-          onClose={() => setShowEnd(false)}
+          onClose={() => { setShowEnd(false); }}
         />
       )}
 
@@ -149,29 +149,29 @@ export default function Game() {
 
       {/* Score + Timer + Lives */}
       <div className={`w-full flex justify-end px-6 mt-4 ${!started ? 'invisible' : ''}`}>
-      <div
-        className={`flex divide-x rounded-2xl border text-center overflow-hidden ${darkMode ? 'border-gray-700 divide-gray-700' : 'border-gray-200 divide-gray-200'}`}
-        style={{ fontFamily: 'NeueHelvetica' }}
-      >
-        <div className="px-8 py-3">
-          <div className="text-xs tracking-widest text-gray-400 mb-1">TIME</div>
-          <div className={`text-xl tracking-wide ${timerClass}`}>{loading ? '—' : timeLeft}</div>
-        </div>
-        <div className="px-8 py-3">
-          <div className="text-xs tracking-widest text-gray-400 mb-1">LIVES</div>
-          <div className="flex gap-1 justify-center text-base">
-            {[1, 2, 3].map((i) => (
-              <span key={i} className={`transition-colors ${i <= strikes ? 'text-red-500' : darkMode ? 'text-gray-700' : 'text-gray-300'}`}>
-                ♥
-              </span>
-            ))}
+        <div
+          className={`flex divide-x rounded-2xl border text-center overflow-hidden ${darkMode ? 'border-gray-700 divide-gray-700' : 'border-gray-200 divide-gray-200'}`}
+          style={{ fontFamily: 'NeueHelvetica' }}
+        >
+          <div className="px-8 py-3">
+            <div className="text-xs tracking-widest text-gray-400 mb-1">TIME</div>
+            <div className={`text-xl tracking-wide ${timerClass}`}>{loading ? '—' : timeLeft}</div>
+          </div>
+          <div className="px-8 py-3">
+            <div className="text-xs tracking-widest text-gray-400 mb-1">LIVES</div>
+            <div className="flex gap-1 justify-center text-base">
+              {[1, 2, 3].map((i) => (
+                <span key={i} className={`transition-colors ${i <= strikes ? 'text-red-500' : darkMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                  ♥
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="px-8 py-3">
+            <div className="text-xs tracking-widests text-gray-400 mb-1">SCORE</div>
+            <div className="text-xl tracking-wide">{score}</div>
           </div>
         </div>
-        <div className="px-8 py-3">
-          <div className="text-xs tracking-widest text-gray-400 mb-1">SCORE</div>
-          <div className="text-xl tracking-wide">{score}</div>
-        </div>
-      </div>
       </div>
 
       {/* Main content */}
