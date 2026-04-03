@@ -18,6 +18,7 @@ type InputState = '' | 'error' | 'correct';
 export default function Game() {
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [started, setStarted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [currentWord, setCurrentWord] = useState<string>(() => randomWords({ exactly: 1, min: 3 })[0]);
   const [guess, setGuess] = useState('');
   const [score, setScore] = useState(0);
@@ -48,9 +49,10 @@ export default function Game() {
     nextWord();
   }, [nextWord]);
 
-  // Fetch associations whenever the current word changes
+  // Fetch associations whenever the current word changes — pauses timer while loading
   useEffect(() => {
     if (!started) return;
+    setLoading(true);
     getAssociations(currentWord)
       .then((data) => {
         if (data.result_msg === 'Entry word not found') {
@@ -60,19 +62,20 @@ export default function Game() {
           setScoreList(data.associations_scored);
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [currentWord, started, nextWord]);
 
-  // Countdown timer
+  // Countdown timer — paused while loading or end modal is open
   useEffect(() => {
-    if (!started || showEnd) return;
+    if (!started || showEnd || loading) return;
     if (timeLeft === 0) {
       endGame(score);
       return;
     }
     const tick = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
     return () => clearTimeout(tick);
-  }, [timeLeft, started, showEnd, score, endGame]);
+  }, [timeLeft, started, showEnd, loading, score, endGame]);
 
   // End game when strikes hit 0
   useEffect(() => {
@@ -81,7 +84,7 @@ export default function Game() {
   }, [strikes, started, score, endGame]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
+    if (e.key !== 'Enter' || loading) return;
 
     if (guess === '') {
       flashInput('error');
@@ -104,11 +107,12 @@ export default function Game() {
 
   const inputClass = [
     'w-full max-w-xs text-center bg-transparent border-none outline-none text-3xl tracking-wide mt-28 [font-family:NeueHelvetica]',
+    'disabled:opacity-30 disabled:cursor-not-allowed transition-opacity',
     inputState === 'error' ? 'shadow-[0_0_0.5em_red]' : '',
     inputState === 'correct' ? 'shadow-[0_0_0.5em_#2bff00]' : '',
   ].filter(Boolean).join(' ');
 
-  const timerClass = `font-bold tracking-widest tabular-nums ${timeLeft <= 5 ? 'text-red-500' : ''}`;
+  const timerClass = `tabular-nums ${timeLeft <= 5 && !loading ? 'text-red-500' : ''}`;
 
   return (
     <div className={`min-h-screen flex flex-col items-center ${darkMode ? 'bg-gray-950 text-white' : 'bg-white text-black'}`}>
@@ -142,13 +146,15 @@ export default function Game() {
       {/* Score + Lives + Timer */}
       <div className="flex gap-12 mt-6 text-sm tracking-widest" style={{ fontFamily: 'NeueHelvetica' }}>
         <span>SCORE: {score}</span>
-        <span className={timerClass}>TIME: {timeLeft}</span>
+        <span className={timerClass}>{loading ? 'TIME: —' : `TIME: ${timeLeft}`}</span>
         <span>LIVES: {strikes}</span>
       </div>
 
       {/* Current word */}
       {started && !showEnd && (
-        <div className="mt-28 text-4xl tracking-wide" style={{ fontFamily: 'NeueHelvetica' }}>{currentWord}</div>
+        <div className="mt-28 text-4xl tracking-wide" style={{ fontFamily: 'NeueHelvetica' }}>
+          {loading ? '...' : currentWord}
+        </div>
       )}
 
       {/* Input */}
@@ -157,7 +163,8 @@ export default function Game() {
           value={guess}
           onChange={(e) => setGuess(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Enter word here..."
+          placeholder={loading ? 'Loading...' : 'Enter word here...'}
+          disabled={loading}
           className={inputClass}
           autoFocus
         />
