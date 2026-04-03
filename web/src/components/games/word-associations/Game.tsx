@@ -136,18 +136,38 @@ export default function Game() {
           <Switch checked={darkMode} onChange={toggleDarkMode} size="small" />
           <button
             onClick={() => setShowRules(true)}
-            className="w-8 h-8 rounded-full bg-black text-white font-bold hover:bg-gray-700 transition-colors"
+            className={`w-8 h-8 rounded-full font-bold transition-colors ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}
           >
             ?
           </button>
         </div>
       </div>
 
-      {/* Score + Lives + Timer */}
-      <div className="flex gap-12 mt-6 text-sm tracking-widest" style={{ fontFamily: 'NeueHelvetica' }}>
-        <span>SCORE: {score}</span>
-        <span className={timerClass}>{loading ? 'TIME: —' : `TIME: ${timeLeft}`}</span>
-        <span>LIVES: {strikes}</span>
+      {/* Score + Timer + Lives */}
+      <div className={`w-full flex justify-end px-6 mt-4 ${!started ? 'invisible' : ''}`}>
+      <div
+        className={`flex divide-x rounded-2xl border text-center overflow-hidden ${darkMode ? 'border-gray-700 divide-gray-700' : 'border-gray-200 divide-gray-200'}`}
+        style={{ fontFamily: 'NeueHelvetica' }}
+      >
+        <div className="px-8 py-3">
+          <div className="text-xs tracking-widest text-gray-400 mb-1">TIME</div>
+          <div className={`text-xl tracking-wide ${timerClass}`}>{loading ? '—' : timeLeft}</div>
+        </div>
+        <div className="px-8 py-3">
+          <div className="text-xs tracking-widest text-gray-400 mb-1">LIVES</div>
+          <div className="flex gap-1 justify-center text-base">
+            {[1, 2, 3].map((i) => (
+              <span key={i} className={`transition-colors ${i <= strikes ? 'text-red-500' : darkMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                ♥
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="px-8 py-3">
+          <div className="text-xs tracking-widest text-gray-400 mb-1">SCORE</div>
+          <div className="text-xl tracking-wide">{score}</div>
+        </div>
+      </div>
       </div>
 
       {/* Main content */}

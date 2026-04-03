@@ -19,14 +19,13 @@ export default function RulesModal({ darkMode, onClose }: RulesModalProps) {
           HOW TO PLAY
         </h2>
         <ul
-          className={`space-y-2 mb-6 text-sm tracking-wide leading-relaxed ${subtle}`}
+          className={`space-y-3 mb-6 text-sm tracking-wide leading-relaxed ${subtle}`}
           style={{ fontFamily: 'NeueHelvetica' }}
         >
-          <li>You are given a random word.</li>
-          <li>Type a word you associate with it and press Enter.</li>
-          <li>Stronger associations earn more points.</li>
-          <li>Wrong guesses cost a life — you have 3.</li>
-          <li>You have 15 seconds per word. A correct guess resets the timer.</li>
+          <li>Type a word associated with the given word.</li>
+          <li>Stronger associations score more points.</li>
+          <li>3 ♥ per word — a wrong guess costs one.</li>
+          <li>15 seconds per word — the clock resets on a correct guess, lives do too.</li>
         </ul>
         <button
           onClick={onClose}
