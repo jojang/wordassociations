@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { generateWord, scoreGuess } from '@/lib/api';
 import { useDarkMode } from '@/contexts/DarkModeContext';
@@ -38,6 +38,8 @@ export default function Game() {
     }
   }, []);
 
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const flashInput = useCallback((state: InputState) => {
     setInputState(state);
     setTimeout(() => setInputState(''), 500);
@@ -73,6 +75,13 @@ export default function Game() {
     if (!started || strikes > 0) return;
     endGame(score);
   }, [strikes, started, score, endGame]);
+
+  // Restore focus after loading completes
+  useEffect(() => {
+    if (!loading && started && !showEnd) {
+      inputRef.current?.focus();
+    }
+  }, [loading, started, showEnd]);
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter' || loading || !currentWord) return;
@@ -186,6 +195,7 @@ export default function Game() {
         {/* Input */}
         {started && (
           <input
+            ref={inputRef}
             value={guess}
             onChange={(e) => setGuess(e.target.value)}
             onKeyDown={handleKeyDown}
