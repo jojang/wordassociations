@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import Switch from '@mui/material/Switch';
 import { getAssociations } from '@/lib/api';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import RulesModal from './RulesModal';
@@ -128,15 +127,20 @@ export default function Game() {
 
       {/* Header */}
       <div className="w-full flex items-center justify-center relative px-6 py-3 border-b border-gray-200 dark:border-gray-800">
-        <Link href="/" className="absolute left-6 text-sm tracking-widest hover:opacity-60 transition-opacity" style={{ fontFamily: 'NeueHelvetica' }}>
+        <Link href="/" className="absolute left-6 text-sm tracking-widest hover:opacity-60 transition-opacity" style={{ fontFamily: 'KarnakPro' }}>
           ← HOME
         </Link>
         <span className="text-2xl tracking-wide" style={{ fontFamily: 'KarnakPro' }}>Word Associations</span>
-        <div className="absolute right-6 flex items-center gap-2">
-          <Switch checked={darkMode} onChange={toggleDarkMode} size="small" />
+        <div className="absolute right-6 flex items-center gap-4">
+          <button
+            onClick={toggleDarkMode}
+            className={`w-9 h-9 rounded-full font-bold transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-md ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}
+          >
+            {darkMode ? '☀' : '☾'}
+          </button>
           <button
             onClick={() => setShowRules(true)}
-            className={`w-8 h-8 rounded-full font-bold transition-colors ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}
+            className={`w-9 h-9 rounded-full font-bold transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-md ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}
           >
             ?
           </button>
@@ -196,7 +200,7 @@ export default function Game() {
         {!started && (
           <button
             onClick={() => setStarted(true)}
-            className={`px-16 py-3 rounded-full text-xl tracking-widest transition-colors ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}
+            className={`px-16 py-3 rounded-full text-xl tracking-widest transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-md ${darkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
             style={{ fontFamily: 'NeueHelvetica' }}
           >
             START
