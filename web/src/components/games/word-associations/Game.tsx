@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import Switch from '@mui/material/Switch';
 import { getAssociations } from '@/lib/api';
 import RulesModal from './RulesModal';
@@ -99,6 +100,9 @@ export default function Game() {
 
         {/* Header */}
         <div className="w-full flex items-center justify-center relative px-6 py-3 border-b border-gray-200 dark:border-gray-800">
+          <Link href="/" className="absolute left-6 text-sm font-bold tracking-widest hover:opacity-60 transition-opacity">
+            ← HOME
+          </Link>
           <span className="text-2xl tracking-wide" style={{ fontFamily: 'KarnakPro' }}>Word Associations</span>
           <div className="absolute right-6 flex items-center gap-2">
             <Switch checked={darkMode} onChange={() => setDarkMode((d) => !d)} size="small" />
