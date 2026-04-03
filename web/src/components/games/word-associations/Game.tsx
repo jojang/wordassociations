@@ -106,7 +106,7 @@ export default function Game() {
   };
 
   const inputClass = [
-    'w-full max-w-xs text-center bg-transparent border-none outline-none text-3xl tracking-wide mt-28 [font-family:NeueHelvetica]',
+    'w-full max-w-xs text-center bg-transparent border-none outline-none text-3xl tracking-wide [font-family:NeueHelvetica]',
     'disabled:opacity-30 disabled:cursor-not-allowed transition-opacity',
     inputState === 'error' ? 'shadow-[0_0_0.5em_red]' : '',
     inputState === 'correct' ? 'shadow-[0_0_0.5em_#2bff00]' : '',
@@ -150,36 +150,39 @@ export default function Game() {
         <span>LIVES: {strikes}</span>
       </div>
 
-      {/* Current word */}
-      {started && !showEnd && (
-        <div className="mt-28 text-4xl tracking-wide" style={{ fontFamily: 'NeueHelvetica' }}>
-          {loading ? '...' : currentWord}
-        </div>
-      )}
+      {/* Main content */}
+      <div className="flex-1 flex flex-col items-center justify-center pb-48">
+        {/* Current word */}
+        {started && !showEnd && (
+          <div className="text-4xl tracking-wide mb-12" style={{ fontFamily: 'NeueHelvetica' }}>
+            {loading ? '...' : currentWord}
+          </div>
+        )}
 
-      {/* Input */}
-      {started && (
-        <input
-          value={guess}
-          onChange={(e) => setGuess(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={loading ? 'Loading...' : 'Enter word here...'}
-          disabled={loading}
-          className={inputClass}
-          autoFocus
-        />
-      )}
+        {/* Input */}
+        {started && (
+          <input
+            value={guess}
+            onChange={(e) => setGuess(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={loading ? 'Loading...' : 'Enter word here...'}
+            disabled={loading}
+            className={inputClass}
+            autoFocus
+          />
+        )}
 
-      {/* Start button */}
-      {!started && (
-        <button
-          onClick={() => setStarted(true)}
-          className="mt-28 px-16 py-3 rounded-full bg-black text-white text-xl tracking-widest hover:bg-gray-700 transition-colors"
-          style={{ fontFamily: 'NeueHelvetica' }}
-        >
-          START
-        </button>
-      )}
+        {/* Start button */}
+        {!started && (
+          <button
+            onClick={() => setStarted(true)}
+            className={`px-16 py-3 rounded-full text-xl tracking-widest transition-colors ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}
+            style={{ fontFamily: 'NeueHelvetica' }}
+          >
+            START
+          </button>
+        )}
+      </div>
     </div>
   );
 }
