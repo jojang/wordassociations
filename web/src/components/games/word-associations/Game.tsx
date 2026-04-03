@@ -81,7 +81,7 @@ export default function Game() {
   };
 
   const inputClass = [
-    'w-full max-w-xs text-center bg-transparent border-none outline-none text-3xl font-bold tracking-wide mt-28',
+    'w-full max-w-xs text-center bg-transparent border-none outline-none text-3xl tracking-wide mt-28 [font-family:NeueHelvetica]',
     inputState === 'error' ? 'shadow-[0_0_0.5em_red]' : '',
     inputState === 'correct' ? 'shadow-[0_0_0.5em_#2bff00]' : '',
   ].filter(Boolean).join(' ');
@@ -99,7 +99,7 @@ export default function Game() {
 
         {/* Header */}
         <div className="w-full flex items-center justify-center relative px-6 py-3 border-b border-gray-200 dark:border-gray-800">
-          <span className="text-2xl font-black tracking-wide">Word Associations</span>
+          <span className="text-2xl tracking-wide" style={{ fontFamily: 'KarnakPro' }}>Word Associations</span>
           <div className="absolute right-6 flex items-center gap-2">
             <Switch checked={darkMode} onChange={() => setDarkMode((d) => !d)} size="small" />
             <button
@@ -119,7 +119,7 @@ export default function Game() {
 
         {/* Current word */}
         {started && (
-          <div className="mt-28 text-4xl font-black tracking-wide">{currentWord}</div>
+          <div className="mt-28 text-4xl tracking-wide" style={{ fontFamily: 'NeueHelvetica' }}>{currentWord}</div>
         )}
 
         {/* Input */}

@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'KarnakPro';
+  src: url('@/fonts/KarnakPro-CondensedBlack.ttf') format('truetype');
+  font-weight: 900;
+}
+
+@font-face {
+  font-family: 'NeueHelvetica';
+  src: url('@/fonts/NeueHelveticaBQ-Bold.otf') format('opentype');
+  font-weight: 700;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
