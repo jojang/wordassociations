@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { generateWord, scoreGuess } from '@/lib/api';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { supabase } from '@/lib/supabase';
@@ -22,7 +23,9 @@ type InputState = '' | 'error' | 'correct';
 
 export default function Game() {
   const { darkMode, toggleDarkMode } = useDarkMode();
+  const router = useRouter();
   const [started, setStarted] = useState(false);
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [currentWord, setCurrentWord] = useState('');
   const [guess, setGuess] = useState('');
@@ -178,6 +181,30 @@ export default function Game() {
     <div className={`min-h-screen flex flex-col items-center ${darkMode ? 'bg-gray-950 text-white' : 'bg-white text-black'}`}>
 
       {showRules && <RulesModal darkMode={darkMode} onClose={() => setShowRules(false)} />}
+      {showLeaveWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowLeaveWarning(false)}>
+          <div className={`rounded-2xl p-8 max-w-sm w-full mx-4 shadow-xl text-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`} onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-2xl mb-3 tracking-wide" style={{ fontFamily: 'KarnakPro' }}>LEAVE GAME?</h2>
+            <p className="text-sm text-gray-400 mb-6" style={{ fontFamily: 'NeueHelvetica' }}>
+              Your current score will be saved.
+            </p>
+            <button
+              onClick={async () => { setShowLeaveWarning(false); await endGame(score); router.push('/'); }}
+              className={`w-full py-2 rounded-full text-sm tracking-widest mb-3 transition-all hover:scale-105 active:scale-95 ${darkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
+              style={{ fontFamily: 'NeueHelvetica' }}
+            >
+              LEAVE & SAVE
+            </button>
+            <button
+              onClick={() => setShowLeaveWarning(false)}
+              className={`w-full py-2 rounded-full border text-sm tracking-widest transition-all hover:scale-105 active:scale-95 ${darkMode ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-200 hover:bg-gray-50'}`}
+              style={{ fontFamily: 'NeueHelvetica' }}
+            >
+              KEEP PLAYING
+            </button>
+          </div>
+        </div>
+      )}
       {showEnd && (
         <EndModal
           darkMode={darkMode}
@@ -189,9 +216,19 @@ export default function Game() {
 
       {/* Header */}
       <div className="w-full flex items-center justify-center relative px-6 py-3 border-b border-gray-200 dark:border-gray-800">
-        <Link href="/" className="absolute left-6 text-sm tracking-widest hover:opacity-60 transition-opacity" style={{ fontFamily: 'KarnakPro' }}>
-          ← HOME
-        </Link>
+        {started && !showEnd ? (
+          <button
+            onClick={() => setShowLeaveWarning(true)}
+            className="absolute left-6 text-sm tracking-widest hover:opacity-60 transition-opacity"
+            style={{ fontFamily: 'KarnakPro' }}
+          >
+            ← HOME
+          </button>
+        ) : (
+          <Link href="/" className="absolute left-6 text-sm tracking-widest hover:opacity-60 transition-opacity" style={{ fontFamily: 'KarnakPro' }}>
+            ← HOME
+          </Link>
+        )}
         <span className="text-2xl tracking-wide" style={{ fontFamily: 'KarnakPro' }}>Word Associations</span>
         <div className="absolute right-6 flex items-center gap-3">
           {user && (

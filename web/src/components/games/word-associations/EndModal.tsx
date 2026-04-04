@@ -16,8 +16,8 @@ export default function EndModal({ darkMode, finalScore, stats, onClose }: EndMo
   const outline = darkMode ? 'border-white hover:bg-gray-800' : 'border-black hover:bg-gray-100';
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className={`${bg} rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl text-center`}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className={`${bg} rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl text-center`} onClick={(e) => e.stopPropagation()}>
         <h2
           className="text-3xl mb-2 tracking-wide"
           style={{ fontFamily: 'KarnakPro' }}
