@@ -1,28 +1,47 @@
-# wordassociations
+# Wordbook
 
-Link to game: https://word-associations-game.herokuapp.com/
-Made using Word Associations API from RapidAPI: https://rapidapi.com/twinword/api/word-associations/
+**Play at [wordbook-seven.vercel.app](https://wordbook-seven.vercel.app)**
 
-Word Associations is a single player game inspired by the icebreaker game "Word associations".
+A suite of word games with AI-powered scoring, user accounts, and persistent stats.
 
-Screenshots:
+## Games
 
-Home Page:
+### Word Associations
+Guess words semantically associated with a given word before you run out of lives. Each round gives you 15 seconds and 3 lives. Scoring is based on semantic similarity — closer associations score higher.
 
-![image](https://user-images.githubusercontent.com/36047664/174456031-fadfce5a-026e-4861-b0c2-d789c7657220.png)
+## Stack
 
-Dark Mode:
+- **Frontend** — Next.js, TypeScript, Tailwind CSS, deployed on Vercel
+- **Backend** — FastAPI (Python), deployed on Hugging Face Spaces
+- **Scoring** — `sentence-transformers` (all-MiniLM-L6-v2) for semantic similarity via cosine distance
+- **Word generation** — `wonderwords`
+- **Auth & Database** — Supabase (Postgres + Auth + RLS)
 
-![image](https://user-images.githubusercontent.com/36047664/174456063-6aa3c111-64ab-44d4-9911-01b777099ee4.png)
+## Features
 
-Rules:
+- Light/dark mode
+- Google OAuth and email/password sign in
+- Username selection on signup with live availability check
+- Persistent stats per game: high score, total games played, average score
+- Semantic scoring — answers are judged by meaning, not exact match
 
-![image](https://user-images.githubusercontent.com/36047664/174456106-3b2d8734-929a-4d5f-8a0a-04ddfe0f57cf.png)
+## Local Development
 
-During Game:
+```bash
+# Frontend
+cd web
+npm install
+npm run dev
 
-![image](https://user-images.githubusercontent.com/36047664/174456138-94868845-8eee-4d1f-9bf6-75ae727644e4.png)
+# Backend
+cd api
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
 
-End Game:
-
-![image](https://user-images.githubusercontent.com/36047664/174456146-03f6ea62-0bdd-4ee9-9b8d-5a13010ff1ac.png)
+Set up `web/.env.local`:
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
