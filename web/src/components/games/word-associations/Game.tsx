@@ -4,8 +4,16 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { generateWord, scoreGuess } from '@/lib/api';
 import { useDarkMode } from '@/contexts/DarkModeContext';
+import { supabase } from '@/lib/supabase';
 import RulesModal from './RulesModal';
 import EndModal from './EndModal';
+import type { User } from '@supabase/supabase-js';
+
+export type GameStats = {
+  highScore: number;
+  totalGames: number;
+  avgScore: number;
+};
 
 const TIMER_DURATION = 15;
 const STRIKES_MAX = 3;
@@ -25,6 +33,16 @@ export default function Game() {
   const [finalScore, setFinalScore] = useState(0);
   const [showRules, setShowRules] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [gameStats, setGameStats] = useState<GameStats | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const fetchNextWord = useCallback(async () => {
     setLoading(true);
@@ -45,14 +63,37 @@ export default function Game() {
     setTimeout(() => setInputState(''), 500);
   }, []);
 
-  const endGame = useCallback((final: number) => {
+  const endGame = useCallback(async (final: number) => {
     setFinalScore(final);
     setScore(0);
     setStrikes(STRIKES_MAX);
     setTimeLeft(TIMER_DURATION);
     setShowEnd(true);
     fetchNextWord();
-  }, [fetchNextWord]);
+
+    if (!user) return;
+    const { data: existing } = await supabase
+      .from('user_stats')
+      .select('total_games, high_score, avg_score')
+      .eq('user_id', user.id)
+      .eq('game', 'word-associations')
+      .single();
+
+    const totalGames = (existing?.total_games ?? 0) + 1;
+    const highScore = Math.max(existing?.high_score ?? 0, final);
+    const avgScore = Math.round(((existing?.avg_score ?? 0) * (existing?.total_games ?? 0) + final) / totalGames);
+
+    await supabase.from('user_stats').upsert({
+      user_id: user.id,
+      game: 'word-associations',
+      total_games: totalGames,
+      high_score: highScore,
+      avg_score: avgScore,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,game' });
+
+    setGameStats({ highScore, totalGames, avgScore });
+  }, [fetchNextWord, user]);
 
   // Fetch first word when game starts
   useEffect(() => {
@@ -130,6 +171,7 @@ export default function Game() {
         <EndModal
           darkMode={darkMode}
           finalScore={finalScore}
+          stats={gameStats}
           onClose={() => { setShowEnd(false); }}
         />
       )}

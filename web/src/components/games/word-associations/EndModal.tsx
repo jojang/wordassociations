@@ -1,14 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import type { GameStats } from './Game';
 
 interface EndModalProps {
   darkMode: boolean;
   finalScore: number;
+  stats: GameStats | null;
   onClose: () => void;
 }
 
-export default function EndModal({ darkMode, finalScore, onClose }: EndModalProps) {
+export default function EndModal({ darkMode, finalScore, stats, onClose }: EndModalProps) {
   const bg = darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black';
   const subtle = darkMode ? 'text-gray-400' : 'text-gray-500';
   const outline = darkMode ? 'border-white hover:bg-gray-800' : 'border-black hover:bg-gray-100';
@@ -29,11 +31,31 @@ export default function EndModal({ darkMode, finalScore, onClose }: EndModalProp
           FINAL SCORE
         </p>
         <div
-          className="text-5xl mb-8"
+          className="text-5xl mb-6"
           style={{ fontFamily: 'NeueHelvetica' }}
         >
           {finalScore}
         </div>
+
+        {stats && (
+          <div
+            className={`flex divide-x rounded-2xl border text-center overflow-hidden mb-8 ${darkMode ? 'border-gray-700 divide-gray-700' : 'border-gray-200 divide-gray-200'}`}
+            style={{ fontFamily: 'NeueHelvetica' }}
+          >
+            <div className="flex-1 px-4 py-3">
+              <div className="text-xs tracking-widest text-gray-400 mb-1">BEST</div>
+              <div className="text-lg">{stats.highScore}</div>
+            </div>
+            <div className="flex-1 px-4 py-3">
+              <div className="text-xs tracking-widest text-gray-400 mb-1">GAMES</div>
+              <div className="text-lg">{stats.totalGames}</div>
+            </div>
+            <div className="flex-1 px-4 py-3">
+              <div className="text-xs tracking-widests text-gray-400 mb-1">AVG</div>
+              <div className="text-lg">{stats.avgScore}</div>
+            </div>
+          </div>
+        )}
         <button
           onClick={onClose}
           className="w-full py-2 rounded-full bg-black text-white tracking-widest hover:bg-gray-700 transition-colors mb-3"
