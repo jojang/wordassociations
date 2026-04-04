@@ -9,7 +9,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Word Games",
+  title: "Wordbook",
   description: "A suite of word games",
 };
 

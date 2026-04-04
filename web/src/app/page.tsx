@@ -91,7 +91,7 @@ export default function Home() {
         )}
       </div>
 
-      <h1 className="text-4xl tracking-wide mb-2" style={{ fontFamily: 'KarnakPro' }}>Word Games</h1>
+      <h1 className="text-4xl tracking-wide mb-2" style={{ fontFamily: 'KarnakPro' }}>Wordbook</h1>
       <p className="text-gray-500 mb-12" style={{ fontFamily: 'NeueHelvetica' }}>Pick a game to play</p>
 
       <div className="grid gap-4 w-full max-w-md">
