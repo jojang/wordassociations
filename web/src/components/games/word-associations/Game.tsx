@@ -34,12 +34,23 @@ export default function Game() {
   const [showRules, setShowRules] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
 
+  const fetchUsername = async (userId: string) => {
+    const { data } = await supabase.from('profiles').select('display_name').eq('id', userId).single();
+    setUsername(data?.display_name ?? null);
+  };
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) fetchUsername(data.user.id);
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) fetchUsername(session.user.id);
+      else setUsername(null);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -182,7 +193,26 @@ export default function Game() {
           ← HOME
         </Link>
         <span className="text-2xl tracking-wide" style={{ fontFamily: 'KarnakPro' }}>Word Associations</span>
-        <div className="absolute right-6 flex items-center gap-4">
+        <div className="absolute right-6 flex items-center gap-3">
+          {user && (
+            <div className="relative group">
+              <div
+                className={`px-4 py-1.5 rounded-full text-sm tracking-widest cursor-default ${darkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
+                style={{ fontFamily: 'NeueHelvetica' }}
+              >
+                {username ?? user.email}
+              </div>
+              <div className={`absolute right-0 mt-2 w-36 rounded-xl border shadow-lg overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity z-10 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="w-full px-4 py-3 text-xs tracking-widest text-left hover:opacity-60 transition-opacity"
+                  style={{ fontFamily: 'NeueHelvetica' }}
+                >
+                  SIGN OUT
+                </button>
+              </div>
+            </div>
+          )}
           <button
             onClick={toggleDarkMode}
             className={`w-9 h-9 rounded-full font-bold transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-md ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}

@@ -10,8 +10,8 @@ export default function RulesModal({ darkMode, onClose }: RulesModalProps) {
   const subtle = darkMode ? 'text-gray-400' : 'text-gray-600';
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className={`${bg} rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl`}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className={`${bg} rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl`} onClick={(e) => e.stopPropagation()}>
         <h2
           className="text-2xl mb-4 tracking-wide"
           style={{ fontFamily: 'KarnakPro' }}

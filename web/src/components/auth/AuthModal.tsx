@@ -13,6 +13,7 @@ type View = 'login' | 'signup';
 export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
   const [view, setView] = useState<View>('login');
   const [email, setEmail] = useState('');
+  const [loginUsername, setLoginUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -52,6 +53,7 @@ export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
     setPassword('');
     setConfirmPassword('');
     setUsername('');
+    setLoginUsername('');
   };
 
   const handleEmailAuth = async () => {
@@ -67,7 +69,9 @@ export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
     setLoading(true);
     try {
       if (view === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: resolvedEmail } = await supabase.rpc('get_email_by_username', { p_username: loginUsername });
+        if (!resolvedEmail) throw new Error('Username not found');
+        const { error } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
         if (error) throw error;
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
@@ -119,14 +123,25 @@ export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
 
         {/* Fields */}
         <div className="space-y-3 mb-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={inputClass}
-            style={{ fontFamily: 'NeueHelvetica' }}
-          />
+          {view === 'login' ? (
+            <input
+              type="text"
+              placeholder="Username"
+              value={loginUsername}
+              onChange={(e) => setLoginUsername(e.target.value)}
+              className={inputClass}
+              style={{ fontFamily: 'NeueHelvetica' }}
+            />
+          ) : (
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+              style={{ fontFamily: 'NeueHelvetica' }}
+            />
+          )}
           {view === 'signup' && (
             <div className="relative">
               <input
@@ -152,6 +167,7 @@ export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleEmailAuth()}
             className={inputClass}
             style={{ fontFamily: 'NeueHelvetica' }}
           />
