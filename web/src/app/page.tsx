@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Sun, Moon, LogIn, ChevronDown } from 'lucide-react';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { supabase } from '@/lib/supabase';
 import AuthModal from '@/components/auth/AuthModal';
@@ -21,15 +22,12 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
 
-  const bg = darkMode ? 'bg-gray-950 text-white' : 'bg-white text-black';
-  const card = darkMode ? 'border-gray-700 hover:border-white' : 'border-gray-200 hover:border-black';
+  const border = darkMode ? 'border-gray-800' : 'border-gray-100';
+  const card = darkMode ? 'border-gray-800 hover:border-gray-600 hover:bg-gray-900' : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50';
+  const iconBtn = darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black';
 
   const fetchUsername = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('display_name')
-      .eq('id', userId)
-      .single();
+    const { data } = await supabase.from('profiles').select('display_name').eq('id', userId).single();
     setUsername(data?.display_name ?? null);
   };
 
@@ -46,65 +44,65 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
-
   return (
-    <main className={`min-h-screen flex flex-col items-center justify-center p-8 ${bg}`}>
+    <main className={`min-h-screen flex flex-col ${darkMode ? 'bg-gray-950 text-white' : 'bg-white text-black'}`}>
       {showAuth && <AuthModal darkMode={darkMode} onClose={() => setShowAuth(false)} />}
 
       {/* Header */}
-      <div className="w-full flex justify-between items-center absolute top-0 px-6 py-3">
-        <button
-          onClick={toggleDarkMode}
-          className={`w-9 h-9 rounded-full font-bold transition-all hover:scale-110 active:scale-95 shadow-sm ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}
-        >
-          {darkMode ? '☀' : '☾'}
-        </button>
-        {user ? (
-          <div className="relative group">
-            <div
-              className={`px-4 py-1.5 rounded-full text-sm tracking-widest cursor-default transition-all ${darkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
+      <header className={`w-full flex items-center justify-between px-6 py-4 border-b ${border}`}>
+        <span className="text-xl tracking-wide" style={{ fontFamily: 'KarnakPro' }}>Wordbook</span>
+
+        <div className="flex items-center gap-3">
+          <button onClick={toggleDarkMode} className={`p-2 rounded-lg transition-colors ${iconBtn}`}>
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          {user ? (
+            <div className="relative group">
+              <button className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${iconBtn}`} style={{ fontFamily: 'NeueHelvetica' }}>
+                <span className="tracking-wide">{username ?? user.email}</span>
+                <ChevronDown size={14} />
+              </button>
+              <div className={`absolute right-0 mt-1 w-36 rounded-xl border shadow-lg overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity z-10 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className={`w-full px-4 py-3 text-xs tracking-widest text-left transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'}`}
+                  style={{ fontFamily: 'NeueHelvetica' }}
+                >
+                  SIGN OUT
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAuth(true)}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm tracking-widest transition-colors ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-900' : 'text-gray-500 hover:text-black hover:bg-gray-50'}`}
               style={{ fontFamily: 'NeueHelvetica' }}
             >
-              {username ?? user.email}
-            </div>
-            <div className={`absolute right-0 mt-2 w-36 rounded-xl border shadow-lg overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-              <button
-                onClick={handleSignOut}
-                className="w-full px-4 py-3 text-xs tracking-widest text-left hover:opacity-60 transition-opacity"
-                style={{ fontFamily: 'NeueHelvetica' }}
-              >
-                SIGN OUT
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowAuth(true)}
-            className={`px-6 py-2 rounded-full text-sm tracking-widest transition-all hover:scale-105 active:scale-95 ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}
-            style={{ fontFamily: 'NeueHelvetica' }}
-          >
-            SIGN IN
-          </button>
-        )}
-      </div>
+              <LogIn size={15} />
+              SIGN IN
+            </button>
+          )}
+        </div>
+      </header>
 
-      <h1 className="text-4xl tracking-wide mb-2" style={{ fontFamily: 'KarnakPro' }}>Wordbook</h1>
-      <p className="text-gray-500 mb-12" style={{ fontFamily: 'NeueHelvetica' }}>Pick a game to play</p>
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-8">
+        <h1 className="text-5xl tracking-wide mb-2" style={{ fontFamily: 'KarnakPro' }}>Wordbook</h1>
+        <p className={`text-sm tracking-widest mb-12 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} style={{ fontFamily: 'NeueHelvetica' }}>PICK A GAME</p>
 
-      <div className="grid gap-4 w-full max-w-md">
-        {GAMES.map((game) => (
-          <Link
-            key={game.slug}
-            href={`/games/${game.slug}`}
-            className={`block p-6 rounded-2xl border transition-colors ${card}`}
-          >
-            <div className="text-lg" style={{ fontFamily: 'NeueHelvetica' }}>{game.title}</div>
-            <div className="text-gray-500 text-sm mt-1" style={{ fontFamily: 'NeueHelvetica' }}>{game.description}</div>
-          </Link>
-        ))}
+        <div className="grid gap-3 w-full max-w-sm">
+          {GAMES.map((game) => (
+            <Link
+              key={game.slug}
+              href={`/games/${game.slug}`}
+              className={`block p-5 rounded-2xl border transition-all ${card}`}
+            >
+              <div className="text-base tracking-wide mb-1" style={{ fontFamily: 'KarnakPro' }}>{game.title}</div>
+              <div className={`text-xs tracking-wide leading-relaxed ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} style={{ fontFamily: 'NeueHelvetica' }}>{game.description}</div>
+            </Link>
+          ))}
+        </div>
       </div>
     </main>
   );

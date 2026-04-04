@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Sun, Moon, CircleHelp, ChevronLeft, ChevronDown, BarChart2 } from 'lucide-react';
 import { generateWord, scoreGuess } from '@/lib/api';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { supabase } from '@/lib/supabase';
 import RulesModal from './RulesModal';
 import EndModal from './EndModal';
+import AuthModal from '@/components/auth/AuthModal';
 import type { User } from '@supabase/supabase-js';
 
 export type GameStats = {
@@ -26,6 +28,7 @@ export default function Game() {
   const router = useRouter();
   const [started, setStarted] = useState(false);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  const [leaveAction, setLeaveAction] = useState<'home' | 'signout'>('home');
   const [loading, setLoading] = useState(false);
   const [currentWord, setCurrentWord] = useState('');
   const [guess, setGuess] = useState('');
@@ -38,6 +41,7 @@ export default function Game() {
   const [showEnd, setShowEnd] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
 
   const fetchUsername = async (userId: string) => {
@@ -45,14 +49,24 @@ export default function Game() {
     setUsername(data?.display_name ?? null);
   };
 
+  const fetchStats = async (userId: string) => {
+    const { data } = await supabase
+      .from('user_stats')
+      .select('total_games, high_score, avg_score')
+      .eq('user_id', userId)
+      .eq('game', 'word-associations')
+      .single();
+    if (data) setGameStats({ highScore: data.high_score, totalGames: data.total_games, avgScore: data.avg_score });
+  };
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
-      if (data.user) fetchUsername(data.user.id);
+      if (data.user) { fetchUsername(data.user.id); fetchStats(data.user.id); }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchUsername(session.user.id);
+      if (session?.user) { fetchUsername(session.user.id); fetchStats(session.user.id); }
       else setUsername(null);
     });
     return () => subscription.unsubscribe();
@@ -77,14 +91,7 @@ export default function Game() {
     setTimeout(() => setInputState(''), 500);
   }, []);
 
-  const endGame = useCallback(async (final: number) => {
-    setFinalScore(final);
-    setScore(0);
-    setStrikes(STRIKES_MAX);
-    setTimeLeft(TIMER_DURATION);
-    setShowEnd(true);
-    fetchNextWord();
-
+  const saveStats = useCallback(async (final: number) => {
     if (!user) return;
     const { data: existing } = await supabase
       .from('user_stats')
@@ -107,7 +114,17 @@ export default function Game() {
     }, { onConflict: 'user_id,game' });
 
     setGameStats({ highScore, totalGames, avgScore });
-  }, [fetchNextWord, user]);
+  }, [user]);
+
+  const endGame = useCallback(async (final: number) => {
+    setFinalScore(final);
+    setScore(0);
+    setStrikes(STRIKES_MAX);
+    setTimeLeft(TIMER_DURATION);
+    setShowEnd(true);
+    fetchNextWord();
+    await saveStats(final);
+  }, [fetchNextWord, saveStats]);
 
   // Fetch first word when game starts
   useEffect(() => {
@@ -180,6 +197,7 @@ export default function Game() {
   return (
     <div className={`min-h-screen flex flex-col items-center ${darkMode ? 'bg-gray-950 text-white' : 'bg-white text-black'}`}>
 
+      {showAuth && <AuthModal darkMode={darkMode} onClose={() => setShowAuth(false)} />}
       {showRules && <RulesModal darkMode={darkMode} onClose={() => setShowRules(false)} />}
       {showLeaveWarning && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowLeaveWarning(false)}>
@@ -189,7 +207,7 @@ export default function Game() {
               Your current score will be saved.
             </p>
             <button
-              onClick={async () => { setShowLeaveWarning(false); await endGame(score); router.push('/'); }}
+              onClick={async () => { setShowLeaveWarning(false); await saveStats(score); if (leaveAction === 'signout') await supabase.auth.signOut(); router.push('/'); }}
               className={`w-full py-2 rounded-full text-sm tracking-widest mb-3 transition-all hover:scale-105 active:scale-95 ${darkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
               style={{ fontFamily: 'NeueHelvetica' }}
             >
@@ -215,34 +233,102 @@ export default function Game() {
       )}
 
       {/* Header */}
-      <div className="w-full flex items-center justify-center relative px-6 py-3 border-b border-gray-200 dark:border-gray-800">
+      <div className={`w-full flex items-center justify-center relative px-6 py-4 border-b ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
+
+        {/* Left: Home */}
         {started && !showEnd ? (
           <button
-            onClick={() => setShowLeaveWarning(true)}
-            className="absolute left-6 text-sm tracking-widest hover:opacity-60 transition-opacity"
+            onClick={() => { setLeaveAction('home'); setShowLeaveWarning(true); }}
+            className={`absolute left-6 flex items-center gap-1 text-sm transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}
             style={{ fontFamily: 'KarnakPro' }}
           >
-            ← HOME
+            <ChevronLeft size={16} />HOME
           </button>
         ) : (
-          <Link href="/" className="absolute left-6 text-sm tracking-widest hover:opacity-60 transition-opacity" style={{ fontFamily: 'KarnakPro' }}>
-            ← HOME
+          <Link
+            href="/"
+            className={`absolute left-6 flex items-center gap-1 text-sm transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}
+            style={{ fontFamily: 'KarnakPro' }}
+          >
+            <ChevronLeft size={16} />HOME
           </Link>
         )}
-        <span className="text-2xl tracking-wide" style={{ fontFamily: 'KarnakPro' }}>Word Associations</span>
-        <div className="absolute right-6 flex items-center gap-3">
+
+        {/* Center: Title */}
+        <span className="text-xl tracking-wide" style={{ fontFamily: 'KarnakPro' }}>Word Associations</span>
+
+        {/* Right: Dark mode, Help, Username */}
+        <div className="absolute right-6 flex items-center gap-2">
+          {user && gameStats && (
+            <div className="relative group">
+              <button className={`p-2 rounded-lg transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}>
+                <BarChart2 size={18} />
+              </button>
+              <div className={`absolute right-0 mt-1 w-48 rounded-xl border shadow-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>YOUR STATS</div>
+                <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>
+                  <span className="text-gray-400">Best</span><span>{gameStats.highScore}</span>
+                </div>
+                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                  <span className="text-gray-400">Games</span><span>{gameStats.totalGames}</span>
+                </div>
+                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                  <span className="text-gray-400">Avg</span><span>{gameStats.avgScore}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Stats */}
+          {user && gameStats && (
+            <div className="relative group">
+              <button className={`p-2 rounded-lg transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}>
+                <BarChart2 size={18} />
+              </button>
+              <div className={`absolute right-0 mt-1 w-48 rounded-xl border shadow-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>YOUR STATS</div>
+                <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>
+                  <span className="text-gray-400">Best</span><span>{gameStats.highScore}</span>
+                </div>
+                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                  <span className="text-gray-400">Games</span><span>{gameStats.totalGames}</span>
+                </div>
+                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                  <span className="text-gray-400">Avg</span><span>{gameStats.avgScore}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Help */}
+          <button onClick={() => setShowRules(true)} className={`p-2 rounded-lg transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}>
+            <CircleHelp size={18} />
+          </button>
+          {/* Dark mode */}
+          <button onClick={toggleDarkMode} className={`p-2 rounded-lg transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}>
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          {/* Sign in / user */}
+          {!user && (
+            <button
+              onClick={() => setShowAuth(true)}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm tracking-widest transition-colors ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-900' : 'text-gray-500 hover:text-black hover:bg-gray-50'}`}
+              style={{ fontFamily: 'NeueHelvetica' }}
+            >
+              SIGN IN
+            </button>
+          )}
           {user && (
             <div className="relative group">
-              <div
-                className={`px-4 py-1.5 rounded-full text-sm tracking-widest cursor-default ${darkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
+              <button
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}
                 style={{ fontFamily: 'NeueHelvetica' }}
               >
-                {username ?? user.email}
-              </div>
-              <div className={`absolute right-0 mt-2 w-36 rounded-xl border shadow-lg overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity z-10 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <span className="tracking-wide">{username ?? user.email}</span>
+                <ChevronDown size={14} />
+              </button>
+              <div className={`absolute right-0 mt-1 w-36 rounded-xl border shadow-lg overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity z-10 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
                 <button
-                  onClick={() => supabase.auth.signOut()}
-                  className="w-full px-4 py-3 text-xs tracking-widest text-left hover:opacity-60 transition-opacity"
+                  onClick={() => { if (started && !showEnd) { setLeaveAction('signout'); setShowLeaveWarning(true); } else { supabase.auth.signOut(); } }}
+                  className={`w-full px-4 py-3 text-xs tracking-widest text-left transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'}`}
                   style={{ fontFamily: 'NeueHelvetica' }}
                 >
                   SIGN OUT
@@ -250,18 +336,6 @@ export default function Game() {
               </div>
             </div>
           )}
-          <button
-            onClick={toggleDarkMode}
-            className={`w-9 h-9 rounded-full font-bold transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-md ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}
-          >
-            {darkMode ? '☀' : '☾'}
-          </button>
-          <button
-            onClick={() => setShowRules(true)}
-            className={`w-9 h-9 rounded-full font-bold transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-md ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-700'}`}
-          >
-            ?
-          </button>
         </div>
       </div>
 
