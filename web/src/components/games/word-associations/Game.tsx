@@ -204,14 +204,14 @@ export default function Game() {
           <div className={`rounded-2xl p-8 max-w-sm w-full mx-4 shadow-xl text-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`} onClick={(e) => e.stopPropagation()}>
             <h2 className="text-2xl mb-3 tracking-wide" style={{ fontFamily: 'KarnakPro' }}>LEAVE GAME?</h2>
             <p className="text-sm text-gray-400 mb-6" style={{ fontFamily: 'NeueHelvetica' }}>
-              Your current score will be saved.
+              {user ? 'Your current score will be saved.' : 'Your progress will be lost. Sign in to save your stats.'}
             </p>
             <button
               onClick={async () => { setShowLeaveWarning(false); await saveStats(score); if (leaveAction === 'signout') await supabase.auth.signOut(); router.push('/'); }}
               className={`w-full py-2 rounded-full text-sm tracking-widest mb-3 transition-all hover:scale-105 active:scale-95 ${darkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
               style={{ fontFamily: 'NeueHelvetica' }}
             >
-              LEAVE & SAVE
+              LEAVE
             </button>
             <button
               onClick={() => setShowLeaveWarning(false)}
@@ -228,7 +228,8 @@ export default function Game() {
           darkMode={darkMode}
           finalScore={finalScore}
           stats={gameStats}
-          onClose={() => { setShowEnd(false); }}
+          onPlayAgain={() => setShowEnd(false)}
+          onDismiss={() => { setShowEnd(false); setStarted(false); }}
         />
       )}
 
@@ -257,27 +258,8 @@ export default function Game() {
         {/* Center: Title */}
         <span className="text-xl tracking-wide" style={{ fontFamily: 'KarnakPro' }}>Word Associations</span>
 
-        {/* Right: Dark mode, Help, Username */}
+        {/* Right: Stats, Help, Dark mode, Username */}
         <div className="absolute right-6 flex items-center gap-2">
-          {user && gameStats && (
-            <div className="relative group">
-              <button className={`p-2 rounded-lg transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}>
-                <BarChart2 size={18} />
-              </button>
-              <div className={`absolute right-0 mt-1 w-48 rounded-xl border shadow-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>YOUR STATS</div>
-                <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>
-                  <span className="text-gray-400">Best</span><span>{gameStats.highScore}</span>
-                </div>
-                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
-                  <span className="text-gray-400">Games</span><span>{gameStats.totalGames}</span>
-                </div>
-                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
-                  <span className="text-gray-400">Avg</span><span>{gameStats.avgScore}</span>
-                </div>
-              </div>
-            </div>
-          )}
           {/* Stats */}
           {user && gameStats && (
             <div className="relative group">
