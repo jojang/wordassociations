@@ -72,10 +72,10 @@ export default function Home() {
       {showNudge && !user && (
         <div className="fixed top-14 right-6 z-40">
           {/* Arrow pointing up */}
-          <div className={`w-3 h-3 rotate-45 border-t border-l ml-auto mr-4 -mb-1.5 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`} />
-          <div className={`rounded-xl border shadow-lg px-4 py-3 w-56 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+          <div className={`w-3 h-3 rotate-45 border-t border-l ml-auto mr-4 -mb-1.5 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-300'}`} />
+          <div className={`rounded-xl border shadow-md px-4 py-3 w-56 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-300'}`}>
             <p className={`text-xs leading-relaxed mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} style={{ fontFamily: 'NeueHelvetica' }}>
-              Sign in to save your stats and track progress.
+              Sign in to save your stats and view post-game insights.
             </p>
             <button
               onClick={dismissNudge}

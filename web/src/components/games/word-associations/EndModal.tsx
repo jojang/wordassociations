@@ -34,7 +34,7 @@ export default function EndModal({ darkMode, finalScore, stats, isGuest, insight
 
         {isGuest && (
           <p className="text-xs text-gray-400 mb-6" style={{ fontFamily: 'NeueHelvetica' }}>
-            Sign in to save your stats and track progress.
+            Sign in to save your stats and view post-game insights.
           </p>
         )}
 

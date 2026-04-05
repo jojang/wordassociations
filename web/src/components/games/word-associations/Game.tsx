@@ -130,7 +130,7 @@ export default function Game() {
     await saveStats(final);
     setInsights([]);
     const failed = failedWordsRef.current;
-    if (failed.length > 0) {
+    if (failed.length > 0 && user) {
       getInsights(failed).then(setInsights).catch(() => {});
     }
     failedWordsRef.current = [];
