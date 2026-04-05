@@ -7,7 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { generateWord, scoreGuess } from '../lib/api';
-import { BarChart2 } from 'lucide-react-native';
+import { BarChart2, HelpCircle } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -37,9 +37,12 @@ export default function GameScreen({ navigation }: Props) {
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
   const [showStats, setShowStats] = useState(false);
 
+  const [showHelp, setShowHelp] = useState(false);
+
   const failedWordsRef = useRef<{ word: string; wrong_guesses: string[] }[]>([]);
   const currentWrongGuessesRef = useRef<string[]>([]);
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const inputRef = useRef<TextInput>(null);
 
   const fetchStats = useCallback(async (userId: string) => {
     const { data } = await supabase
@@ -147,6 +150,7 @@ export default function GameScreen({ navigation }: Props) {
 
   const handleSubmit = async () => {
     setShowStats(false);
+    inputRef.current?.focus();
     if (loading || !currentWord) return;
     const trimmed = guess.trim().toLowerCase();
     const word = currentWord.toLowerCase();
@@ -154,6 +158,7 @@ export default function GameScreen({ navigation }: Props) {
     if (!trimmed || trimmed.length < 3 || word.includes(trimmed) || trimmed.includes(word)) {
       flashGlow('red');
       setGuess('');
+      setTimeout(() => inputRef.current?.focus(), 50);
       return;
     }
 
@@ -183,6 +188,7 @@ export default function GameScreen({ navigation }: Props) {
       console.error(err);
     } finally {
       setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
   };
 
@@ -204,6 +210,9 @@ export default function GameScreen({ navigation }: Props) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Word Associations</Text>
         <View style={styles.headerRight}>
+          <TouchableOpacity onPress={() => setShowHelp(true)} hitSlop={12} style={{ marginRight: 12 }}>
+            <HelpCircle size={18} color="#9ca3af" />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowStats((v) => !v)} hitSlop={12}>
             <BarChart2 size={18} color="#9ca3af" />
           </TouchableOpacity>
@@ -274,6 +283,7 @@ export default function GameScreen({ navigation }: Props) {
           {/* Glow + Input */}
           <Animated.View style={[styles.inputWrapper, glowStyle]}>
             <TextInput
+              ref={inputRef}
               style={styles.input}
               value={guess}
               onChangeText={setGuess}
@@ -289,10 +299,28 @@ export default function GameScreen({ navigation }: Props) {
         </KeyboardAvoidingView>
       )}
 
+      {/* Help Modal */}
+      <Modal visible={showHelp} transparent animationType="fade">
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowHelp(false)}>
+          <TouchableOpacity style={styles.modal} activeOpacity={1} onPress={() => {}}>
+            <Text style={styles.modalTitle}>HOW TO PLAY</Text>
+            <View style={{ gap: 10, marginBottom: 24, alignSelf: 'stretch' }}>
+              <Text style={styles.helpText}>Type a word associated with the given word.</Text>
+              <Text style={styles.helpText}>Stronger associations score more points.</Text>
+              <Text style={styles.helpText}>3 ♥ per word — a wrong guess costs one.</Text>
+              <Text style={styles.helpText}>15 seconds per word — the clock resets on a correct guess, lives do too.</Text>
+            </View>
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => setShowHelp(false)}>
+              <Text style={styles.primaryBtnText}>BACK TO GAME</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       {/* End Modal */}
       <Modal visible={showEnd} transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={styles.modal}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowEnd(false)}>
+          <TouchableOpacity style={styles.modal} activeOpacity={1} onPress={() => {}}>
             <Text style={styles.modalTitle}>GAME OVER</Text>
             <Text style={styles.modalSubtitle}>FINAL SCORE</Text>
             <Text style={styles.modalScore}>{finalScore}</Text>
@@ -313,8 +341,8 @@ export default function GameScreen({ navigation }: Props) {
             >
               <Text style={styles.outlineBtnText}>HOME</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -424,4 +452,5 @@ const styles = StyleSheet.create({
   modalSubtitle: { fontSize: 10, letterSpacing: 4, color: '#9ca3af', marginBottom: 4 },
   modalScore: { fontSize: 64, marginBottom: 4, color: '#111' },
   modalBest: { fontSize: 11, letterSpacing: 3, color: '#9ca3af', marginBottom: 24 },
+  helpText: { fontSize: 13, color: '#6b7280', lineHeight: 20, letterSpacing: 0.3 },
 });
