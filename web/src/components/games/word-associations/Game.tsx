@@ -281,6 +281,7 @@ export default function Game() {
           insights={insights}
           onPlayAgain={() => setShowEnd(false)}
           onDismiss={() => { setShowEnd(false); setStarted(false); }}
+          onSignIn={() => { setShowEnd(false); setStarted(false); setShowAuth(true); }}
         />
       )}
 

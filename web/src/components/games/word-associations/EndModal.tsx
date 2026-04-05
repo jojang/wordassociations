@@ -13,53 +13,49 @@ interface EndModalProps {
   insights: Insight[];
   onPlayAgain: () => void;
   onDismiss: () => void;
+  onSignIn: () => void;
 }
 
-export default function EndModal({ darkMode, finalScore, stats, isGuest, insights, onPlayAgain, onDismiss }: EndModalProps) {
+export default function EndModal({ darkMode, finalScore, stats, isGuest, insights, onPlayAgain, onDismiss, onSignIn }: EndModalProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onDismiss]);
+
   const bg = darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black';
-  const subtle = darkMode ? 'text-gray-400' : 'text-gray-500';
-  const outline = darkMode ? 'border-white hover:bg-gray-800' : 'border-black hover:bg-gray-100';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onDismiss}>
-      <div className={`${bg} rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl text-center`} onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-3xl mb-2 tracking-wide" style={{ fontFamily: 'KarnakPro' }}>GAME OVER</h2>
-        <p className={`text-sm mb-2 tracking-wide ${subtle}`} style={{ fontFamily: 'NeueHelvetica' }}>FINAL SCORE</p>
-        <div className="text-5xl mb-6" style={{ fontFamily: 'NeueHelvetica' }}>{finalScore}</div>
+      <div className={`${bg} rounded-2xl p-8 max-w-sm w-full mx-4 shadow-xl text-center`} onClick={(e) => e.stopPropagation()}>
 
-        {isGuest && (
-          <p className="text-xs text-gray-400 mb-6" style={{ fontFamily: 'NeueHelvetica' }}>
-            Sign in to save your stats and view post-game insights.
-          </p>
-        )}
+        {/* Score */}
+        <h2 className="text-2xl tracking-wide mb-3" style={{ fontFamily: 'KarnakPro' }}>GAME OVER</h2>
+        <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>FINAL SCORE</div>
+        <div className="text-6xl mb-4" style={{ fontFamily: 'NeueHelvetica' }}>{finalScore}</div>
 
+        {/* Inline stats */}
         {stats && (
-          <div
-            className={`flex divide-x rounded-2xl border text-center overflow-hidden mb-8 ${darkMode ? 'border-gray-700 divide-gray-700' : 'border-gray-200 divide-gray-200'}`}
-            style={{ fontFamily: 'NeueHelvetica' }}
-          >
-            <div className="flex-1 px-4 py-3">
-              <div className="text-xs tracking-widest text-gray-400 mb-1">BEST</div>
-              <div className="text-lg">{stats.highScore}</div>
+          <div className="flex justify-center gap-6 mb-6" style={{ fontFamily: 'NeueHelvetica' }}>
+            <div>
+              <div className="text-xs tracking-widest text-gray-400">BEST</div>
+              <div className="text-sm">{stats.highScore}</div>
             </div>
-            <div className="flex-1 px-4 py-3">
-              <div className="text-xs tracking-widest text-gray-400 mb-1">GAMES</div>
-              <div className="text-lg">{stats.totalGames}</div>
+            <div>
+              <div className="text-xs tracking-widest text-gray-400">GAMES</div>
+              <div className="text-sm">{stats.totalGames}</div>
             </div>
-            <div className="flex-1 px-4 py-3">
-              <div className="text-xs tracking-widest text-gray-400 mb-1">AVG</div>
-              <div className="text-lg">{stats.avgScore}</div>
+            <div>
+              <div className="text-xs tracking-widests text-gray-400">AVG</div>
+              <div className="text-sm">{stats.avgScore}</div>
             </div>
           </div>
         )}
+
+        {/* Insights */}
         {insights.length > 0 && (
           <div className={`text-left rounded-xl border p-4 mb-6 space-y-2 ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
-            <div className="text-xs tracking-widest text-gray-400 mb-3" style={{ fontFamily: 'NeueHelvetica' }}>WHAT WENT WRONG</div>
+            <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>WHAT WENT WRONG</div>
             {insights.map((item, i) => (
               <div key={i} style={{ fontFamily: 'NeueHelvetica' }}>
                 <span className="text-xs text-gray-400">{item.word} → {item.guess}: </span>
@@ -69,21 +65,34 @@ export default function EndModal({ darkMode, finalScore, stats, isGuest, insight
           </div>
         )}
 
-
+        {/* Primary action */}
         <button
           onClick={onPlayAgain}
-          className="w-full py-2 rounded-full bg-black text-white tracking-widest hover:bg-gray-700 transition-colors mb-3"
+          className={`w-full py-2 rounded-full text-sm tracking-widest transition-colors mb-3 mt-6 ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}`}
           style={{ fontFamily: 'NeueHelvetica' }}
         >
           PLAY AGAIN
         </button>
-        <Link
-          href="/"
-          className={`block w-full py-2 rounded-full border text-sm tracking-widest transition-colors ${outline}`}
-          style={{ fontFamily: 'NeueHelvetica' }}
-        >
-          HOME
-        </Link>
+
+        {/* Secondary actions */}
+        <div className="flex gap-3">
+          <Link
+            href="/"
+            className={`flex-1 py-2 rounded-full border text-xs tracking-widest text-center transition-colors ${darkMode ? 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white' : 'border-gray-200 text-gray-500 hover:border-gray-400 hover:text-black'}`}
+            style={{ fontFamily: 'NeueHelvetica' }}
+          >
+            HOME
+          </Link>
+          {isGuest && (
+            <button
+              onClick={onSignIn}
+              className={`flex-1 py-2 rounded-full border text-xs tracking-widest transition-colors ${darkMode ? 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white' : 'border-gray-200 text-gray-500 hover:border-gray-400 hover:text-black'}`}
+              style={{ fontFamily: 'NeueHelvetica' }}
+            >
+              SIGN IN
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
