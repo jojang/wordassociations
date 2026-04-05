@@ -361,7 +361,9 @@ export default function Game() {
         {/* Current word */}
         {started && !showEnd && (
           <div className="text-4xl tracking-wide mb-12" style={{ fontFamily: 'NeueHelvetica' }}>
-            {loading ? '...' : currentWord}
+            {loading
+              ? <div className={`h-10 w-32 rounded-lg animate-pulse ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`} />
+              : currentWord}
           </div>
         )}
 
@@ -372,7 +374,7 @@ export default function Game() {
             value={guess}
             onChange={(e) => setGuess(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={loading ? 'Loading...' : 'Enter word here...'}
+            placeholder={loading ? '' : 'Enter word here...'}
             disabled={loading}
             className={inputClass}
             autoFocus
