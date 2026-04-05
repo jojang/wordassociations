@@ -142,23 +142,27 @@ export default function Home() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="text-base tracking-wide" style={{ fontFamily: 'KarnakPro' }}>{game.title}</div>
-                    {user && gameStats && (
-                      <div className="relative group/stats" onClick={(e) => e.preventDefault()}>
-                        <BarChart2 size={15} className={`transition-colors ${darkMode ? 'text-gray-600 hover:text-gray-400' : 'text-gray-300 hover:text-gray-500'}`} />
-                        <div className={`absolute left-full top-1/2 -translate-y-1/2 ml-3 w-48 rounded-xl border shadow-lg p-3 opacity-0 group-hover/stats:opacity-100 transition-opacity z-10 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                          <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>YOUR STATS</div>
-                          <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>
-                            <span className="text-gray-400">Best</span><span>{gameStats.highScore}</span>
-                          </div>
-                          <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
-                            <span className="text-gray-400">Games</span><span>{gameStats.totalGames}</span>
-                          </div>
-                          <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
-                            <span className="text-gray-400">Avg</span><span>{gameStats.avgScore}</span>
-                          </div>
-                        </div>
+                    <div className="relative group/stats" onClick={(e) => e.preventDefault()}>
+                      <BarChart2 size={15} className={`transition-colors ${darkMode ? 'text-gray-600 hover:text-gray-400' : 'text-gray-300 hover:text-gray-500'}`} />
+                      <div className={`absolute left-full top-1/2 -translate-y-1/2 ml-3 rounded-xl border shadow-lg p-3 opacity-0 group-hover/stats:opacity-100 pointer-events-none group-hover/stats:pointer-events-auto transition-opacity z-10 ${user && gameStats ? 'w-48' : 'w-32'} ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                        {user && gameStats ? (
+                          <>
+                            <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>YOUR STATS</div>
+                            <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>
+                              <span className="text-gray-400">Best</span><span>{gameStats.highScore}</span>
+                            </div>
+                            <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                              <span className="text-gray-400">Games</span><span>{gameStats.totalGames}</span>
+                            </div>
+                            <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                              <span className="text-gray-400">Avg</span><span>{gameStats.avgScore}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-xs text-gray-400 leading-relaxed text-center" style={{ fontFamily: 'NeueHelvetica' }}>Sign in to view<br />your stats</div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                   <div className={`text-xs tracking-wide leading-relaxed mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} style={{ fontFamily: 'NeueHelvetica' }}>{game.description}</div>
                 </Link>

@@ -313,25 +313,29 @@ export default function Game() {
         {/* Right: Stats, Help, Dark mode, Username */}
         <div className="absolute right-6 flex items-center gap-2">
           {/* Stats */}
-          {user && gameStats && (
-            <div className="relative group">
-              <button className={`p-2 rounded-lg transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}>
-                <BarChart2 size={18} />
-              </button>
-              <div className={`absolute right-0 mt-1 w-48 rounded-xl border shadow-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>YOUR STATS</div>
-                <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>
-                  <span className="text-gray-400">Best</span><span>{gameStats.highScore}</span>
-                </div>
-                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
-                  <span className="text-gray-400">Games</span><span>{gameStats.totalGames}</span>
-                </div>
-                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
-                  <span className="text-gray-400">Avg</span><span>{gameStats.avgScore}</span>
-                </div>
-              </div>
+          <div className="relative group">
+            <button className={`p-2 rounded-lg transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}>
+              <BarChart2 size={18} />
+            </button>
+            <div className={`absolute right-0 mt-1 rounded-xl border shadow-lg p-3 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-10 ${user && gameStats ? 'w-48' : 'w-32'} ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+              {user && gameStats ? (
+                <>
+                  <div className="text-xs tracking-widests text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>YOUR STATS</div>
+                  <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>
+                    <span className="text-gray-400">Best</span><span>{gameStats.highScore}</span>
+                  </div>
+                  <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                    <span className="text-gray-400">Games</span><span>{gameStats.totalGames}</span>
+                  </div>
+                  <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                    <span className="text-gray-400">Avg</span><span>{gameStats.avgScore}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-xs text-gray-400 leading-relaxed text-center" style={{ fontFamily: 'NeueHelvetica' }}>Sign in to view<br />your stats</div>
+              )}
             </div>
-          )}
+          </div>
           {/* Help */}
           <button onClick={() => setShowRules(true)} className={`p-2 rounded-lg transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}>
             <CircleHelp size={18} />
