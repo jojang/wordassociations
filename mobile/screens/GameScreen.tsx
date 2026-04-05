@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   statsPopoverCaret: {
     position: 'absolute',
     top: -6,
-    right: 3,
+    right: 33,
     width: 12,
     height: 12,
     backgroundColor: '#fff',

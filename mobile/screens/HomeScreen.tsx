@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, LayoutAnimation, Platform, UIManager } from 'react-native';
+
+if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true);
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BarChart2 } from 'lucide-react-native';
@@ -91,8 +93,8 @@ export default function HomeScreen({ navigation }: Props) {
         <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Game')} activeOpacity={0.8}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Word Associations</Text>
-            <TouchableOpacity onPress={(e) => { e.stopPropagation(); setShowStats((v) => !v); }} hitSlop={12}>
-              <BarChart2 size={15} color="#d1d5db" />
+            <TouchableOpacity onPress={(e) => { e.stopPropagation(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setShowStats((v) => !v); }} hitSlop={24} activeOpacity={1}>
+              <BarChart2 size={17} color={showStats ? '#000' : '#9ca3af'} />
             </TouchableOpacity>
           </View>
           {showStats && (
