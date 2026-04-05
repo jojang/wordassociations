@@ -55,7 +55,7 @@ export default function EndModal({ darkMode, finalScore, stats, isGuest, insight
         {/* Insights */}
         {insights.length > 0 && (
           <div className={`text-left rounded-xl border p-4 mb-6 space-y-2 ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
-            <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>WHAT WENT WRONG</div>
+            <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>INSIGHTS</div>
             {insights.map((item, i) => (
               <div key={i} style={{ fontFamily: 'NeueHelvetica' }}>
                 <span className="text-xs text-gray-400">{item.word} → {item.guess}: </span>
