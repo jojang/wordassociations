@@ -8,11 +8,12 @@ interface EndModalProps {
   darkMode: boolean;
   finalScore: number;
   stats: GameStats | null;
+  isGuest: boolean;
   onPlayAgain: () => void;
   onDismiss: () => void;
 }
 
-export default function EndModal({ darkMode, finalScore, stats, onPlayAgain, onDismiss }: EndModalProps) {
+export default function EndModal({ darkMode, finalScore, stats, isGuest, onPlayAgain, onDismiss }: EndModalProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss(); };
     window.addEventListener('keydown', handler);
@@ -28,6 +29,12 @@ export default function EndModal({ darkMode, finalScore, stats, onPlayAgain, onD
         <h2 className="text-3xl mb-2 tracking-wide" style={{ fontFamily: 'KarnakPro' }}>GAME OVER</h2>
         <p className={`text-sm mb-2 tracking-wide ${subtle}`} style={{ fontFamily: 'NeueHelvetica' }}>FINAL SCORE</p>
         <div className="text-5xl mb-6" style={{ fontFamily: 'NeueHelvetica' }}>{finalScore}</div>
+
+        {isGuest && (
+          <p className="text-xs text-gray-400 mb-6" style={{ fontFamily: 'NeueHelvetica' }}>
+            Sign in to save your stats and track progress.
+          </p>
+        )}
 
         {stats && (
           <div

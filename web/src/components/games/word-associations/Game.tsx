@@ -236,6 +236,7 @@ export default function Game() {
           darkMode={darkMode}
           finalScore={finalScore}
           stats={gameStats}
+          isGuest={!user}
           onPlayAgain={() => setShowEnd(false)}
           onDismiss={() => { setShowEnd(false); setStarted(false); }}
         />
