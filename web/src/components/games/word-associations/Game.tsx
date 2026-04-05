@@ -331,6 +331,8 @@ export default function Game() {
                     <span className="text-gray-400">Avg</span><span>{gameStats.avgScore}</span>
                   </div>
                 </>
+              ) : user ? (
+                <div className="text-xs text-gray-400 text-center" style={{ fontFamily: 'NeueHelvetica' }}>No game data</div>
               ) : (
                 <div className="text-xs text-gray-400 leading-relaxed text-center" style={{ fontFamily: 'NeueHelvetica' }}>Sign in to view<br />your stats</div>
               )}
