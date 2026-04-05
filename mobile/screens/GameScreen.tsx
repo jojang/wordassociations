@@ -38,6 +38,7 @@ export default function GameScreen({ navigation }: Props) {
   const [showStats, setShowStats] = useState(false);
 
   const [showHelp, setShowHelp] = useState(false);
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
 
   const failedWordsRef = useRef<{ word: string; wrong_guesses: string[] }[]>([]);
   const currentWrongGuessesRef = useRef<string[]>([]);
@@ -205,7 +206,7 @@ export default function GameScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => { setShowStats(false); navigation.goBack(); }}>
+        <TouchableOpacity onPress={() => { setShowStats(false); if (started && !showEnd) { setShowLeaveWarning(true); } else { navigation.goBack(); } }}>
           <Text style={styles.backText}>← HOME</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Word Associations</Text>
@@ -298,6 +299,30 @@ export default function GameScreen({ navigation }: Props) {
           </Animated.View>
         </KeyboardAvoidingView>
       )}
+
+      {/* Leave Warning Modal */}
+      <Modal visible={showLeaveWarning} transparent animationType="fade">
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowLeaveWarning(false)}>
+          <TouchableOpacity style={styles.modal} activeOpacity={1} onPress={() => {}}>
+            <Text style={styles.modalTitle}>LEAVE GAME?</Text>
+            <Text style={[styles.helpText, { textAlign: 'center', marginBottom: 24 }]}>
+              {user ? 'Your current score will be saved.' : 'Your progress will be lost. Sign in to save your stats.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={async () => { setShowLeaveWarning(false); await saveStats(score); navigation.goBack(); }}
+            >
+              <Text style={styles.primaryBtnText}>LEAVE</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.outlineBtn, { marginTop: 10 }]}
+              onPress={() => setShowLeaveWarning(false)}
+            >
+              <Text style={styles.outlineBtnText}>KEEP PLAYING</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Help Modal */}
       <Modal visible={showHelp} transparent animationType="fade">
