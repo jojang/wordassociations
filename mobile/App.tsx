@@ -1,6 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
 import HomeScreen from './screens/HomeScreen';
 import GameScreen from './screens/GameScreen';
 import AuthScreen from './screens/AuthScreen';
@@ -14,6 +15,13 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    KarnakPro: require('./assets/fonts/KarnakPro-CondensedBlack.ttf'),
+    NeueHelvetica: require('./assets/fonts/NeueHelveticaBQ-Bold.otf'),
+  });
+
+  if (!fontsLoaded) return null;
+
   return (
     <SafeAreaProvider>
       <NavigationContainer>

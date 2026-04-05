@@ -223,11 +223,11 @@ export default function GameScreen({ navigation }: Props) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Word Associations</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => setShowHelp(true)} hitSlop={12}>
-            <HelpCircle size={18} color="#9ca3af" />
-          </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowStats((v) => !v)} hitSlop={12}>
             <BarChart2 size={18} color="#9ca3af" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowHelp(true)} hitSlop={12}>
+            <HelpCircle size={18} color="#9ca3af" />
           </TouchableOpacity>
         </View>
       </View>
@@ -256,7 +256,6 @@ export default function GameScreen({ navigation }: Props) {
       {!started ? (
         <TouchableOpacity style={styles.center} activeOpacity={1} onPress={() => setShowStats(false)}>
           <Text style={styles.startTitle}>Word Associations</Text>
-          <Text style={styles.startDesc}>Guess words associated with a given word before you run out of lives.</Text>
           <TouchableOpacity style={styles.primaryBtn} onPress={() => { setShowStats(false); setStarted(true); }}>
             <Text style={styles.primaryBtnText}>START</Text>
           </TouchableOpacity>
@@ -356,7 +355,7 @@ export default function GameScreen({ navigation }: Props) {
 
       {/* End Modal */}
       <Modal visible={showEnd} transparent animationType="fade">
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowEnd(false)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => { setShowEnd(false); setStarted(false); }}>
           <TouchableOpacity style={styles.modal} activeOpacity={1} onPress={() => {}}>
             <Text style={styles.modalTitle}>GAME OVER</Text>
             <Text style={styles.modalSubtitle}>FINAL SCORE</Text>
@@ -396,8 +395,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  backText: { fontSize: 13, letterSpacing: 1, color: '#9ca3af' },
-  headerTitle: { fontSize: 16, letterSpacing: 0.5, color: '#111' },
+  backText: { fontSize: 13, letterSpacing: 1, color: '#9ca3af', fontFamily: 'NeueHelvetica' },
+  headerTitle: { fontSize: 16, letterSpacing: 0.5, color: '#111', fontFamily: 'KarnakPro' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   statsOverlay: { flex: 1, alignItems: 'flex-end', paddingRight: 20 },
   statsPopoverCaret: {
@@ -424,13 +423,13 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     minWidth: 140,
   },
-  statsTitle: { fontSize: 9, letterSpacing: 3, color: '#9ca3af', marginBottom: 8 },
+  statsTitle: { fontSize: 9, letterSpacing: 3, color: '#9ca3af', marginBottom: 8, fontFamily: 'NeueHelvetica' },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  statsLabel: { fontSize: 11, color: '#9ca3af' },
-  statsValue: { fontSize: 11, color: '#111' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
-  startTitle: { fontSize: 30, letterSpacing: 1.5, marginBottom: 12, color: '#111' },
-  startDesc: { fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20, marginBottom: 40 },
+  statsLabel: { fontSize: 11, color: '#9ca3af', fontFamily: 'NeueHelvetica' },
+  statsValue: { fontSize: 11, color: '#111', fontFamily: 'NeueHelvetica' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingBottom: 120 },
+  startTitle: { fontSize: 30, letterSpacing: 1.5, marginBottom: 40, color: '#111', fontFamily: 'KarnakPro' },
+  startDesc: { fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20, marginBottom: 40, fontFamily: 'NeueHelvetica' },
   gameArea: { flex: 1, alignItems: 'center', paddingHorizontal: 24, paddingTop: 20 },
   statsPill: {
     flexDirection: 'row',
@@ -439,15 +438,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     alignSelf: 'flex-end',
-    marginBottom: 60,
+    marginBottom: 100,
   },
   statCell: { paddingVertical: 10, paddingHorizontal: 20, alignItems: 'center' },
   statDivider: { width: 1, backgroundColor: '#e5e7eb' },
-  statLabel: { fontSize: 9, letterSpacing: 2, color: '#9ca3af', marginBottom: 4 },
-  statValue: { fontSize: 18, letterSpacing: 0.5, color: '#111' },
+  statLabel: { fontSize: 9, letterSpacing: 2, color: '#9ca3af', marginBottom: 4, fontFamily: 'NeueHelvetica' },
+  statValue: { fontSize: 18, letterSpacing: 0.5, color: '#111', fontFamily: 'NeueHelvetica' },
   heartsRow: { flexDirection: 'row', gap: 2 },
-  wordContainer: { height: 56, alignItems: 'center', justifyContent: 'center', marginBottom: 40 },
-  currentWord: { fontSize: 38, letterSpacing: 2, color: '#111' },
+  wordContainer: { height: 56, alignItems: 'center', justifyContent: 'center', marginBottom: 56 },
+  currentWord: { fontSize: 38, letterSpacing: 2, color: '#111', fontFamily: 'NeueHelvetica' },
   inputWrapper: { width: '100%', borderRadius: 8 },
   input: {
     width: '100%',
@@ -458,6 +457,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+    fontFamily: 'NeueHelvetica',
   },
   primaryBtn: {
     backgroundColor: '#000',
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 32,
   },
-  primaryBtnText: { color: '#fff', fontSize: 12, letterSpacing: 4 },
+  primaryBtnText: { color: '#fff', fontSize: 12, letterSpacing: 4, fontFamily: 'NeueHelvetica' },
   outlineBtn: {
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  outlineBtnText: { color: '#9ca3af', fontSize: 12, letterSpacing: 4 },
+  outlineBtnText: { color: '#9ca3af', fontSize: 12, letterSpacing: 4, fontFamily: 'NeueHelvetica' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   modal: {
     backgroundColor: '#fff',
@@ -485,9 +485,9 @@ const styles = StyleSheet.create({
     width: '85%',
     alignItems: 'center',
   },
-  modalTitle: { fontSize: 22, letterSpacing: 2, marginBottom: 8, color: '#111' },
-  modalSubtitle: { fontSize: 10, letterSpacing: 4, color: '#9ca3af', marginBottom: 4 },
-  modalScore: { fontSize: 64, marginBottom: 4, color: '#111' },
-  modalBest: { fontSize: 11, letterSpacing: 3, color: '#9ca3af', marginBottom: 24 },
-  helpText: { fontSize: 13, color: '#6b7280', lineHeight: 20, letterSpacing: 0.3 },
+  modalTitle: { fontSize: 22, letterSpacing: 2, marginBottom: 8, color: '#111', fontFamily: 'KarnakPro' },
+  modalSubtitle: { fontSize: 10, letterSpacing: 4, color: '#9ca3af', marginBottom: 4, fontFamily: 'NeueHelvetica' },
+  modalScore: { fontSize: 64, marginBottom: 4, color: '#111', fontFamily: 'KarnakPro' },
+  modalBest: { fontSize: 11, letterSpacing: 3, color: '#9ca3af', marginBottom: 24, fontFamily: 'NeueHelvetica' },
+  helpText: { fontSize: 13, color: '#6b7280', lineHeight: 20, letterSpacing: 0.3, fontFamily: 'NeueHelvetica' },
 });

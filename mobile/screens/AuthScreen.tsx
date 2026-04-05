@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   inner: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
   backBtn: { marginBottom: 32 },
-  backText: { fontSize: 13, letterSpacing: 1, color: '#9ca3af' },
+  backText: { fontSize: 13, letterSpacing: 1, color: '#9ca3af', fontFamily: 'NeueHelvetica' },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#f3f4f6',
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   tab: { flex: 1, paddingVertical: 8, alignItems: 'center', zIndex: 1 },
-  tabText: { fontSize: 11, letterSpacing: 3, color: '#9ca3af' },
+  tabText: { fontSize: 11, letterSpacing: 3, color: '#9ca3af', fontFamily: 'NeueHelvetica' },
   tabTextActive: { color: '#fff' },
   fields: { gap: 12, marginBottom: 16 },
   input: {
@@ -233,10 +233,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#111',
     backgroundColor: '#fafafa',
+    fontFamily: 'NeueHelvetica',
   },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   statusText: { fontSize: 16, width: 20, textAlign: 'center' },
-  error: { color: '#ef4444', fontSize: 12, marginBottom: 12 },
+  error: { color: '#ef4444', fontSize: 12, marginBottom: 12, fontFamily: 'NeueHelvetica' },
   primaryBtn: {
     backgroundColor: '#000',
     paddingVertical: 13,
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  primaryBtnText: { color: '#fff', fontSize: 12, letterSpacing: 4 },
+  primaryBtnText: { color: '#fff', fontSize: 12, letterSpacing: 4, fontFamily: 'NeueHelvetica' },
   cancelBtn: { alignItems: 'center', marginTop: 16 },
-  cancelText: { fontSize: 12, color: '#9ca3af', letterSpacing: 1 },
+  cancelText: { fontSize: 12, color: '#9ca3af', letterSpacing: 1, fontFamily: 'NeueHelvetica' },
 });
