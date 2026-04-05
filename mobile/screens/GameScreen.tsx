@@ -7,6 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { generateWord, scoreGuess } from '../lib/api';
+import { BarChart2 } from 'lucide-react-native';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
+
+type GameStats = { highScore: number; totalGames: number; avgScore: number };
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Game'>;
@@ -27,10 +32,58 @@ export default function GameScreen({ navigation }: Props) {
   const [finalScore, setFinalScore] = useState(0);
   const [showEnd, setShowEnd] = useState(false);
   const [glowColor, setGlowColor] = useState<'none' | 'red' | 'green'>('none');
+  const [user, setUser] = useState<User | null>(null);
+  const [gameStats, setGameStats] = useState<GameStats | null>(null);
+  const [showStats, setShowStats] = useState(false);
 
   const failedWordsRef = useRef<{ word: string; wrong_guesses: string[] }[]>([]);
   const currentWrongGuessesRef = useRef<string[]>([]);
   const glowAnim = useRef(new Animated.Value(0)).current;
+
+  const fetchStats = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from('user_stats')
+      .select('total_games, high_score, avg_score')
+      .eq('user_id', userId)
+      .eq('game', 'word-associations')
+      .single();
+    if (data) setGameStats({ highScore: data.high_score, totalGames: data.total_games, avgScore: data.avg_score });
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) fetchStats(data.user.id);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) fetchStats(session.user.id);
+      else setGameStats(null);
+    });
+    return () => subscription.unsubscribe();
+  }, [fetchStats]);
+
+  const saveStats = useCallback(async (final: number) => {
+    if (!user) return;
+    const { data: existing } = await supabase
+      .from('user_stats')
+      .select('total_games, high_score, avg_score')
+      .eq('user_id', user.id)
+      .eq('game', 'word-associations')
+      .single();
+    const totalGames = (existing?.total_games ?? 0) + 1;
+    const highScore = Math.max(existing?.high_score ?? 0, final);
+    const avgScore = Math.round(((existing?.avg_score ?? 0) * (existing?.total_games ?? 0) + final) / totalGames);
+    await supabase.from('user_stats').upsert({
+      user_id: user.id,
+      game: 'word-associations',
+      total_games: totalGames,
+      high_score: highScore,
+      avg_score: avgScore,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,game' });
+    setGameStats({ highScore, totalGames, avgScore });
+  }, [user]);
 
   const fetchNextWord = useCallback(async () => {
     setFetchingWord(true);
@@ -65,7 +118,8 @@ export default function GameScreen({ navigation }: Props) {
     failedWordsRef.current = [];
     currentWrongGuessesRef.current = [];
     fetchNextWord();
-  }, [fetchNextWord]);
+    await saveStats(final);
+  }, [fetchNextWord, saveStats]);
 
   useEffect(() => {
     if (started) fetchNextWord();
@@ -91,6 +145,7 @@ export default function GameScreen({ navigation }: Props) {
   }, [strikes, started, score, endGame]);
 
   const handleSubmit = async () => {
+    setShowStats(false);
     if (loading || !currentWord) return;
     const trimmed = guess.trim().toLowerCase();
     const word = currentWord.toLowerCase();
@@ -143,24 +198,47 @@ export default function GameScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => { setShowStats(false); navigation.goBack(); }}>
           <Text style={styles.backText}>← HOME</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Word Associations</Text>
-        <View style={{ width: 70 }} />
-      </View>
-
-      {!started ? (
-        <View style={styles.center}>
-          <Text style={styles.startTitle}>Word Associations</Text>
-          <Text style={styles.startDesc}>Guess words associated with a given word before you run out of lives.</Text>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => setStarted(true)}>
-            <Text style={styles.primaryBtnText}>START</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={() => setShowStats((v) => !v)} hitSlop={12}>
+            <BarChart2 size={18} color="#9ca3af" />
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Stats popover — full screen transparent overlay + popover */}
+      <Modal visible={showStats} transparent animationType="none" onRequestClose={() => setShowStats(false)}>
+        <TouchableOpacity style={styles.statsOverlay} activeOpacity={1} onPress={() => setShowStats(false)}>
+          <View style={styles.statsPopover}>
+            {user && gameStats ? (
+              <>
+                <Text style={styles.statsTitle}>YOUR STATS</Text>
+                <View style={styles.statsRow}><Text style={styles.statsLabel}>Best</Text><Text style={styles.statsValue}>{gameStats.highScore}</Text></View>
+                <View style={styles.statsRow}><Text style={styles.statsLabel}>Games</Text><Text style={styles.statsValue}>{gameStats.totalGames}</Text></View>
+                <View style={styles.statsRow}><Text style={styles.statsLabel}>Avg</Text><Text style={styles.statsValue}>{gameStats.avgScore}</Text></View>
+              </>
+            ) : user ? (
+              <Text style={styles.statsLabel}>No game data</Text>
+            ) : (
+              <Text style={styles.statsLabel}>Sign in to view your stats</Text>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {!started ? (
+        <TouchableOpacity style={styles.center} activeOpacity={1} onPress={() => setShowStats(false)}>
+          <Text style={styles.startTitle}>Word Associations</Text>
+          <Text style={styles.startDesc}>Guess words associated with a given word before you run out of lives.</Text>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => { setShowStats(false); setStarted(true); }}>
+            <Text style={styles.primaryBtnText}>START</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
       ) : (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.gameArea}>
-
           {/* Stats pill */}
           <View style={styles.statsPill}>
             <View style={styles.statCell}>
@@ -206,7 +284,6 @@ export default function GameScreen({ navigation }: Props) {
               editable={!loading}
             />
           </Animated.View>
-
         </KeyboardAvoidingView>
       )}
 
@@ -217,14 +294,17 @@ export default function GameScreen({ navigation }: Props) {
             <Text style={styles.modalTitle}>GAME OVER</Text>
             <Text style={styles.modalSubtitle}>FINAL SCORE</Text>
             <Text style={styles.modalScore}>{finalScore}</Text>
-
+            {gameStats && (
+              <Text style={styles.modalBest}>
+                BEST <Text style={{ color: '#111' }}>{gameStats.highScore}</Text>
+              </Text>
+            )}
             <TouchableOpacity
               style={styles.primaryBtn}
               onPress={() => { setShowEnd(false); setStarted(true); }}
             >
               <Text style={styles.primaryBtnText}>PLAY AGAIN</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={[styles.outlineBtn, { marginTop: 10 }]}
               onPress={() => { setShowEnd(false); navigation.goBack(); }}
@@ -251,6 +331,24 @@ const styles = StyleSheet.create({
   },
   backText: { fontSize: 13, letterSpacing: 1, color: '#9ca3af' },
   headerTitle: { fontSize: 16, letterSpacing: 0.5, color: '#111' },
+  headerRight: { width: 70, alignItems: 'flex-end' },
+  statsOverlay: { flex: 1, alignItems: 'flex-end', paddingTop: 60, paddingRight: 20 },
+  statsPopover: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    minWidth: 140,
+  },
+  statsTitle: { fontSize: 9, letterSpacing: 3, color: '#9ca3af', marginBottom: 8 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  statsLabel: { fontSize: 11, color: '#9ca3af' },
+  statsValue: { fontSize: 11, color: '#111' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   startTitle: { fontSize: 30, letterSpacing: 1.5, marginBottom: 12, color: '#111' },
   startDesc: { fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20, marginBottom: 40 },
@@ -310,5 +408,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: { fontSize: 22, letterSpacing: 2, marginBottom: 8, color: '#111' },
   modalSubtitle: { fontSize: 10, letterSpacing: 4, color: '#9ca3af', marginBottom: 4 },
-  modalScore: { fontSize: 64, marginBottom: 24, color: '#111' },
+  modalScore: { fontSize: 64, marginBottom: 4, color: '#111' },
+  modalBest: { fontSize: 11, letterSpacing: 3, color: '#9ca3af', marginBottom: 24 },
 });

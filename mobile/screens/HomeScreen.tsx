@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BarChart2 } from 'lucide-react-native';
 import { RootStackParamList } from '../App';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
+
+type GameStats = { highScore: number; totalGames: number; avgScore: number };
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -14,21 +17,33 @@ export default function HomeScreen({ navigation }: Props) {
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [gameStats, setGameStats] = useState<GameStats | null>(null);
+  const [showStats, setShowStats] = useState(false);
 
   const fetchUsername = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('display_name').eq('id', userId).single();
     setUsername(data?.display_name ?? null);
   };
 
+  const fetchStats = async (userId: string) => {
+    const { data } = await supabase
+      .from('user_stats')
+      .select('total_games, high_score, avg_score')
+      .eq('user_id', userId)
+      .eq('game', 'word-associations')
+      .single();
+    if (data) setGameStats({ highScore: data.high_score, totalGames: data.total_games, avgScore: data.avg_score });
+  };
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
-      if (data.user) fetchUsername(data.user.id);
+      if (data.user) { fetchUsername(data.user.id); fetchStats(data.user.id); }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchUsername(session.user.id);
-      else setUsername(null);
+      if (session?.user) { fetchUsername(session.user.id); fetchStats(session.user.id); }
+      else { setUsername(null); setGameStats(null); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -73,8 +88,29 @@ export default function HomeScreen({ navigation }: Props) {
         <Text style={styles.title}>Wordbook</Text>
         <Text style={styles.subtitle}>PICK A GAME</Text>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Game')}>
-          <Text style={styles.cardTitle}>Word Associations</Text>
+        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Game')} activeOpacity={0.8}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Word Associations</Text>
+            <TouchableOpacity onPress={(e) => { e.stopPropagation(); setShowStats((v) => !v); }} hitSlop={12}>
+              <BarChart2 size={15} color="#d1d5db" />
+            </TouchableOpacity>
+          </View>
+          {showStats && (
+            <View style={styles.statsPopover}>
+              {user && gameStats ? (
+                <>
+                  <Text style={styles.statsTitle}>YOUR STATS</Text>
+                  <View style={styles.statsRow}><Text style={styles.statsLabel}>Best</Text><Text style={styles.statsValue}>{gameStats.highScore}</Text></View>
+                  <View style={styles.statsRow}><Text style={styles.statsLabel}>Games</Text><Text style={styles.statsValue}>{gameStats.totalGames}</Text></View>
+                  <View style={styles.statsRow}><Text style={styles.statsLabel}>Avg</Text><Text style={styles.statsValue}>{gameStats.avgScore}</Text></View>
+                </>
+              ) : user ? (
+                <Text style={styles.statsLabel}>No game data</Text>
+              ) : (
+                <Text style={styles.statsLabel}>Sign in to view your stats</Text>
+              )}
+            </View>
+          )}
           <Text style={styles.cardDesc}>Guess words associated with a given word before you run out of lives.</Text>
         </TouchableOpacity>
       </View>
@@ -125,6 +161,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
   },
-  cardTitle: { fontSize: 16, letterSpacing: 0.5, marginBottom: 4, color: '#111' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  cardTitle: { fontSize: 16, letterSpacing: 0.5, color: '#111' },
   cardDesc: { fontSize: 12, color: '#9ca3af', lineHeight: 18 },
+  statsPopover: {
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    marginTop: 10,
+    paddingTop: 10,
+    marginBottom: 8,
+  },
+  statsTitle: { fontSize: 9, letterSpacing: 3, color: '#9ca3af', marginBottom: 8 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  statsLabel: { fontSize: 11, color: '#9ca3af' },
+  statsValue: { fontSize: 11, color: '#111' },
 });
