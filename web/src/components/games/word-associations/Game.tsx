@@ -21,7 +21,7 @@ export type GameStats = {
 const TIMER_DURATION = 15;
 const STRIKES_MAX = 3;
 
-type InputState = '' | 'error' | 'correct';
+type InputState = '' | 'error' | 'correct' | 'invalid';
 
 export default function Game() {
   const { darkMode, toggleDarkMode } = useDarkMode();
@@ -166,14 +166,29 @@ export default function Game() {
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter' || loading || !currentWord) return;
 
-    if (guess.trim() === '') {
-      flashInput('error');
+    const trimmed = guess.trim().toLowerCase();
+    const word = currentWord.toLowerCase();
+
+    if (trimmed === '') {
+      flashInput('invalid');
+      return;
+    }
+
+    if (trimmed.length < 3) {
+      flashInput('invalid');
+      setGuess('');
+      return;
+    }
+
+    if (word.includes(trimmed) || trimmed.includes(word)) {
+      flashInput('invalid');
+      setGuess('');
       return;
     }
 
     setLoading(true);
     try {
-      const result = await scoreGuess(currentWord, guess.trim());
+      const result = await scoreGuess(currentWord, trimmed);
       if (result.correct) {
         flashInput('correct');
         setScore((s) => s + result.score);
@@ -193,12 +208,16 @@ export default function Game() {
     }
   };
 
-  const inputClass = [
-    'w-full max-w-xs text-center bg-transparent border-none outline-none text-3xl tracking-wide [font-family:NeueHelvetica]',
-    'disabled:opacity-30 disabled:cursor-not-allowed transition-opacity',
-    inputState === 'error' ? 'shadow-[0_0_0.5em_red]' : '',
-    inputState === 'correct' ? 'shadow-[0_0_0.5em_#2bff00]' : '',
-  ].filter(Boolean).join(' ');
+  const inputClass = 'w-full max-w-xs text-center bg-transparent border-none outline-none text-3xl tracking-wide [font-family:NeueHelvetica] disabled:opacity-30 disabled:cursor-not-allowed';
+
+  const inputStyle = {
+    animation: inputState === 'invalid' ? 'shake 0.35s ease-in-out' : undefined,
+    boxShadow:
+      inputState === 'error' ? '0 0 8px 3px rgba(255, 80, 80, 0.5), 0 0 20px 6px rgba(255, 80, 80, 0.2)' :
+      inputState === 'correct' ? '0 0 8px 3px rgba(43, 255, 0, 0.45), 0 0 20px 6px rgba(43, 255, 0, 0.18)' :
+      undefined,
+    borderRadius: '8px',
+  };
 
   const timerClass = `tabular-nums ${timeLeft <= 5 && !loading ? 'text-red-500' : ''}`;
 
@@ -378,6 +397,7 @@ export default function Game() {
             placeholder={loading ? '' : 'Enter word here...'}
             disabled={loading}
             className={inputClass}
+            style={inputStyle}
             autoFocus
           />
         )}
