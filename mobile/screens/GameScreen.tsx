@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { generateWord, scoreGuess } from '../lib/api';
@@ -21,6 +21,7 @@ const TIMER_DURATION = 15;
 const STRIKES_MAX = 3;
 
 export default function GameScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetchingWord, setFetchingWord] = useState(false);
@@ -211,8 +212,9 @@ export default function GameScreen({ navigation }: Props) {
 
       {/* Stats popover — full screen transparent overlay + popover */}
       <Modal visible={showStats} transparent animationType="none" onRequestClose={() => setShowStats(false)}>
-        <TouchableOpacity style={styles.statsOverlay} activeOpacity={1} onPress={() => setShowStats(false)}>
+        <TouchableOpacity style={[styles.statsOverlay, { paddingTop: insets.top + 50 }]} activeOpacity={1} onPress={() => setShowStats(false)}>
           <View style={styles.statsPopover}>
+            <View style={styles.statsPopoverCaret} />
             {user && gameStats ? (
               <>
                 <Text style={styles.statsTitle}>YOUR STATS</Text>
@@ -332,7 +334,19 @@ const styles = StyleSheet.create({
   backText: { fontSize: 13, letterSpacing: 1, color: '#9ca3af' },
   headerTitle: { fontSize: 16, letterSpacing: 0.5, color: '#111' },
   headerRight: { width: 70, alignItems: 'flex-end' },
-  statsOverlay: { flex: 1, alignItems: 'flex-end', paddingTop: 60, paddingRight: 20 },
+  statsOverlay: { flex: 1, alignItems: 'flex-end', paddingRight: 20 },
+  statsPopoverCaret: {
+    position: 'absolute',
+    top: -6,
+    right: 3,
+    width: 12,
+    height: 12,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderColor: '#f3f4f6',
+    transform: [{ rotate: '45deg' }],
+  },
   statsPopover: {
     backgroundColor: '#fff',
     borderWidth: 1,
