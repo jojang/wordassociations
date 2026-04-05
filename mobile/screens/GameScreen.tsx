@@ -1,23 +1,314 @@
-import { View, Text, StyleSheet, StatusBar } from 'react-native';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Animated,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../App';
+import { generateWord, scoreGuess } from '../lib/api';
 
-export default function GameScreen() {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Game'>;
+};
+
+const TIMER_DURATION = 15;
+const STRIKES_MAX = 3;
+
+export default function GameScreen({ navigation }: Props) {
+  const [started, setStarted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [fetchingWord, setFetchingWord] = useState(false);
+  const [currentWord, setCurrentWord] = useState('');
+  const [guess, setGuess] = useState('');
+  const [score, setScore] = useState(0);
+  const [strikes, setStrikes] = useState(STRIKES_MAX);
+  const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
+  const [finalScore, setFinalScore] = useState(0);
+  const [showEnd, setShowEnd] = useState(false);
+  const [glowColor, setGlowColor] = useState<'none' | 'red' | 'green'>('none');
+
+  const failedWordsRef = useRef<{ word: string; wrong_guesses: string[] }[]>([]);
+  const currentWrongGuessesRef = useRef<string[]>([]);
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  const fetchNextWord = useCallback(async () => {
+    setFetchingWord(true);
+    setLoading(true);
+    try {
+      const word = await generateWord();
+      setCurrentWord(word);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFetchingWord(false);
+      setLoading(false);
+    }
+  }, []);
+
+  const flashGlow = useCallback((color: 'red' | 'green') => {
+    setGlowColor(color);
+    glowAnim.setValue(1);
+    Animated.timing(glowAnim, {
+      toValue: 0,
+      duration: 500,
+      useNativeDriver: true,
+    }).start(() => setGlowColor('none'));
+  }, [glowAnim]);
+
+  const endGame = useCallback(async (final: number) => {
+    setFinalScore(final);
+    setScore(0);
+    setStrikes(STRIKES_MAX);
+    setTimeLeft(TIMER_DURATION);
+    setShowEnd(true);
+    failedWordsRef.current = [];
+    currentWrongGuessesRef.current = [];
+    fetchNextWord();
+  }, [fetchNextWord]);
+
+  useEffect(() => {
+    if (started) fetchNextWord();
+  }, [started, fetchNextWord]);
+
+  useEffect(() => {
+    if (!started || showEnd || loading) return;
+    if (timeLeft === 0) {
+      if (currentWrongGuessesRef.current.length > 0) {
+        failedWordsRef.current.push({ word: currentWord, wrong_guesses: [...currentWrongGuessesRef.current] });
+        currentWrongGuessesRef.current = [];
+      }
+      endGame(score);
+      return;
+    }
+    const tick = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
+    return () => clearTimeout(tick);
+  }, [timeLeft, started, showEnd, loading, score, currentWord, endGame]);
+
+  useEffect(() => {
+    if (!started || strikes > 0) return;
+    endGame(score);
+  }, [strikes, started, score, endGame]);
+
+  const handleSubmit = async () => {
+    if (loading || !currentWord) return;
+    const trimmed = guess.trim().toLowerCase();
+    const word = currentWord.toLowerCase();
+
+    if (!trimmed || trimmed.length < 3 || word.includes(trimmed) || trimmed.includes(word)) {
+      flashGlow('red');
+      setGuess('');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await scoreGuess(currentWord, trimmed);
+      if (result.correct) {
+        flashGlow('green');
+        setScore((s) => s + result.score);
+        setGuess('');
+        setStrikes(STRIKES_MAX);
+        setTimeLeft(TIMER_DURATION);
+        currentWrongGuessesRef.current = [];
+        await fetchNextWord();
+      } else {
+        flashGlow('red');
+        currentWrongGuessesRef.current.push(trimmed);
+        const newStrikes = strikes - 1;
+        setStrikes(newStrikes);
+        setGuess('');
+        if (newStrikes === 0) {
+          failedWordsRef.current.push({ word: currentWord, wrong_guesses: [...currentWrongGuessesRef.current] });
+          currentWrongGuessesRef.current = [];
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const glowStyle = glowColor === 'none' ? {} : {
+    shadowColor: glowColor === 'green' ? '#22c55e' : '#ef4444',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: glowAnim,
+    shadowRadius: 20,
+  };
+
+  const timerColor = timeLeft <= 5 && !loading ? '#ef4444' : '#6b7280';
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <Text style={styles.text}>Game coming soon</Text>
-    </View>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backText}>← HOME</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Word Associations</Text>
+        <View style={{ width: 70 }} />
+      </View>
+
+      {!started ? (
+        <View style={styles.center}>
+          <Text style={styles.startTitle}>Word Associations</Text>
+          <Text style={styles.startDesc}>Guess words associated with a given word before you run out of lives.</Text>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => setStarted(true)}>
+            <Text style={styles.primaryBtnText}>START</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.gameArea}>
+
+          {/* Stats pill */}
+          <View style={styles.statsPill}>
+            <View style={styles.statCell}>
+              <Text style={styles.statLabel}>TIME</Text>
+              <Text style={[styles.statValue, { color: timerColor }]}>{loading ? '—' : timeLeft}</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statCell}>
+              <Text style={styles.statLabel}>LIVES</Text>
+              <View style={styles.heartsRow}>
+                {[1, 2, 3].map((i) => (
+                  <Text key={i} style={{ color: i <= strikes ? '#ef4444' : '#d1d5db', fontSize: 14 }}>♥</Text>
+                ))}
+              </View>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statCell}>
+              <Text style={styles.statLabel}>SCORE</Text>
+              <Text style={styles.statValue}>{score}</Text>
+            </View>
+          </View>
+
+          {/* Current word */}
+          <View style={styles.wordContainer}>
+            {fetchingWord
+              ? <ActivityIndicator color="#9ca3af" />
+              : <Text style={styles.currentWord}>{currentWord}</Text>
+            }
+          </View>
+
+          {/* Glow + Input */}
+          <Animated.View style={[styles.inputWrapper, glowStyle]}>
+            <TextInput
+              style={styles.input}
+              value={guess}
+              onChangeText={setGuess}
+              onSubmitEditing={handleSubmit}
+              placeholder={loading ? '' : 'Enter word here...'}
+              placeholderTextColor="#d1d5db"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="done"
+              editable={!loading}
+            />
+          </Animated.View>
+
+        </KeyboardAvoidingView>
+      )}
+
+      {/* End Modal */}
+      <Modal visible={showEnd} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>GAME OVER</Text>
+            <Text style={styles.modalSubtitle}>FINAL SCORE</Text>
+            <Text style={styles.modalScore}>{finalScore}</Text>
+
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={() => { setShowEnd(false); setStarted(true); }}
+            >
+              <Text style={styles.primaryBtnText}>PLAY AGAIN</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.outlineBtn, { marginTop: 10 }]}
+              onPress={() => { setShowEnd(false); navigation.goBack(); }}
+            >
+              <Text style={styles.outlineBtnText}>HOME</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
+  container: { flex: 1, backgroundColor: '#fff' },
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
-  text: {
-    fontSize: 16,
-    color: '#9ca3af',
+  backText: { fontSize: 13, letterSpacing: 1, color: '#9ca3af' },
+  headerTitle: { fontSize: 16, letterSpacing: 0.5, color: '#111' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
+  startTitle: { fontSize: 30, letterSpacing: 1.5, marginBottom: 12, color: '#111' },
+  startDesc: { fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20, marginBottom: 40 },
+  gameArea: { flex: 1, alignItems: 'center', paddingHorizontal: 24, paddingTop: 20 },
+  statsPill: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 16,
+    overflow: 'hidden',
+    alignSelf: 'flex-end',
+    marginBottom: 60,
   },
+  statCell: { paddingVertical: 10, paddingHorizontal: 20, alignItems: 'center' },
+  statDivider: { width: 1, backgroundColor: '#e5e7eb' },
+  statLabel: { fontSize: 9, letterSpacing: 2, color: '#9ca3af', marginBottom: 4 },
+  statValue: { fontSize: 18, letterSpacing: 0.5, color: '#111' },
+  heartsRow: { flexDirection: 'row', gap: 2 },
+  wordContainer: { height: 56, alignItems: 'center', justifyContent: 'center', marginBottom: 40 },
+  currentWord: { fontSize: 38, letterSpacing: 2, color: '#111' },
+  inputWrapper: { width: '100%', borderRadius: 8 },
+  input: {
+    width: '100%',
+    fontSize: 24,
+    textAlign: 'center',
+    letterSpacing: 1.5,
+    color: '#111',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  primaryBtn: {
+    backgroundColor: '#000',
+    paddingVertical: 13,
+    borderRadius: 999,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 32,
+  },
+  primaryBtnText: { color: '#fff', fontSize: 12, letterSpacing: 4 },
+  outlineBtn: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingVertical: 13,
+    borderRadius: 999,
+    width: '100%',
+    alignItems: 'center',
+  },
+  outlineBtnText: { color: '#9ca3af', fontSize: 12, letterSpacing: 4 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  modal: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 32,
+    width: '85%',
+    alignItems: 'center',
+  },
+  modalTitle: { fontSize: 22, letterSpacing: 2, marginBottom: 8, color: '#111' },
+  modalSubtitle: { fontSize: 10, letterSpacing: 4, color: '#9ca3af', marginBottom: 4 },
+  modalScore: { fontSize: 64, marginBottom: 24, color: '#111' },
 });
