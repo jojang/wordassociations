@@ -1,45 +1,123 @@
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Home'>;
 };
 
 export default function HomeScreen({ navigation }: Props) {
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <Text style={styles.title}>Wordbook</Text>
-      <Text style={styles.subtitle}>PICK A GAME</Text>
+  const [user, setUser] = useState<User | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
 
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Game')}>
-        <Text style={styles.cardTitle}>Word Associations</Text>
-        <Text style={styles.cardDesc}>Guess words associated with a given word before you run out of lives.</Text>
-      </TouchableOpacity>
-    </View>
+  const fetchUsername = async (userId: string) => {
+    const { data } = await supabase.from('profiles').select('display_name').eq('id', userId).single();
+    setUsername(data?.display_name ?? null);
+  };
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) fetchUsername(data.user.id);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) fetchUsername(session.user.id);
+      else setUsername(null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Dismiss dropdown on outside tap */}
+      {showDropdown && (
+        <TouchableWithoutFeedback onPress={() => setShowDropdown(false)}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
+      )}
+
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerLogo}>Wordbook</Text>
+        {user ? (
+          <View style={styles.userContainer}>
+            <TouchableOpacity onPress={() => setShowDropdown((v) => !v)}>
+              <Text style={styles.headerAction}>{username ?? user.email} ▾</Text>
+            </TouchableOpacity>
+            {showDropdown && (
+              <View style={styles.dropdown}>
+                <TouchableOpacity
+                  onPress={() => { setShowDropdown(false); supabase.auth.signOut(); }}
+                  style={styles.dropdownItem}
+                >
+                  <Text style={styles.dropdownText}>SIGN OUT</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => navigation.navigate('Auth')}>
+            <Text style={styles.headerAction}>SIGN IN</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Content */}
+      <View style={styles.center}>
+        <Text style={styles.title}>Wordbook</Text>
+        <Text style={styles.subtitle}>PICK A GAME</Text>
+
+        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Game')}>
+          <Text style={styles.cardTitle}>Word Associations</Text>
+          <Text style={styles.cardDesc}>Guess words associated with a given word before you run out of lives.</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
+  container: { flex: 1, backgroundColor: '#fff' },
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    zIndex: 10,
   },
-  title: {
-    fontSize: 42,
-    letterSpacing: 2,
-    marginBottom: 4,
+  headerLogo: { fontSize: 18, letterSpacing: 1, color: '#111' },
+  headerAction: { fontSize: 11, letterSpacing: 2, color: '#9ca3af' },
+  userContainer: { position: 'relative' },
+  dropdown: {
+    position: 'absolute',
+    top: 28,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    zIndex: 20,
+    minWidth: 120,
+    overflow: 'hidden',
   },
-  subtitle: {
-    fontSize: 11,
-    letterSpacing: 4,
-    color: '#9ca3af',
-    marginBottom: 48,
-  },
+  dropdownItem: { paddingHorizontal: 16, paddingVertical: 12 },
+  dropdownText: { fontSize: 11, letterSpacing: 3, color: '#111' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
+  title: { fontSize: 42, letterSpacing: 2, marginBottom: 4, color: '#111' },
+  subtitle: { fontSize: 11, letterSpacing: 4, color: '#9ca3af', marginBottom: 48 },
   card: {
     width: '100%',
     borderWidth: 1,
@@ -47,14 +125,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
   },
-  cardTitle: {
-    fontSize: 16,
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  cardDesc: {
-    fontSize: 12,
-    color: '#9ca3af',
-    lineHeight: 18,
-  },
+  cardTitle: { fontSize: 16, letterSpacing: 0.5, marginBottom: 4, color: '#111' },
+  cardDesc: { fontSize: 12, color: '#9ca3af', lineHeight: 18 },
 });
