@@ -3,17 +3,19 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import type { GameStats } from './Game';
+import type { Insight } from '@/lib/api';
 
 interface EndModalProps {
   darkMode: boolean;
   finalScore: number;
   stats: GameStats | null;
   isGuest: boolean;
+  insights: Insight[];
   onPlayAgain: () => void;
   onDismiss: () => void;
 }
 
-export default function EndModal({ darkMode, finalScore, stats, isGuest, onPlayAgain, onDismiss }: EndModalProps) {
+export default function EndModal({ darkMode, finalScore, stats, isGuest, insights, onPlayAgain, onDismiss }: EndModalProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss(); };
     window.addEventListener('keydown', handler);
@@ -55,6 +57,19 @@ export default function EndModal({ darkMode, finalScore, stats, isGuest, onPlayA
             </div>
           </div>
         )}
+        {insights.length > 0 && (
+          <div className={`text-left rounded-xl border p-4 mb-6 space-y-2 ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
+            <div className="text-xs tracking-widest text-gray-400 mb-3" style={{ fontFamily: 'NeueHelvetica' }}>WHAT WENT WRONG</div>
+            {insights.map((item, i) => (
+              <div key={i} style={{ fontFamily: 'NeueHelvetica' }}>
+                <span className="text-xs text-gray-400">{item.word} → {item.guess}: </span>
+                <span className="text-xs">{item.insight}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+
         <button
           onClick={onPlayAgain}
           className="w-full py-2 rounded-full bg-black text-white tracking-widest hover:bg-gray-700 transition-colors mb-3"

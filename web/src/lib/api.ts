@@ -22,3 +22,20 @@ export async function scoreGuess(word: string, guess: string): Promise<ScoreResp
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
+
+export interface Insight {
+  word: string;
+  guess: string;
+  insight: string;
+}
+
+export async function getInsights(failedWords: { word: string; wrong_guesses: string[] }[]): Promise<Insight[]> {
+  const res = await fetch(`${API_BASE}/api/insights/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ failed_words: failedWords }),
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.insights;
+}

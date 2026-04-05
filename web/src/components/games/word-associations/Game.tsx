@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Sun, Moon, CircleHelp, ChevronLeft, ChevronDown, BarChart2 } from 'lucide-react';
-import { generateWord, scoreGuess } from '@/lib/api';
+import { generateWord, scoreGuess, getInsights } from '@/lib/api';
+import type { Insight } from '@/lib/api';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { supabase } from '@/lib/supabase';
 import RulesModal from './RulesModal';
@@ -42,6 +43,9 @@ export default function Game() {
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const failedWordsRef = useRef<{ word: string; wrong_guesses: string[] }[]>([]);
+  const currentWrongGuessesRef = useRef<string[]>([]);
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
 
   const fetchUsername = async (userId: string) => {
@@ -124,6 +128,13 @@ export default function Game() {
     setShowEnd(true);
     fetchNextWord();
     await saveStats(final);
+    setInsights([]);
+    const failed = failedWordsRef.current;
+    if (failed.length > 0) {
+      getInsights(failed).then(setInsights).catch(() => {});
+    }
+    failedWordsRef.current = [];
+    currentWrongGuessesRef.current = [];
   }, [fetchNextWord, saveStats]);
 
   // Fetch first word when game starts
@@ -135,6 +146,10 @@ export default function Game() {
   useEffect(() => {
     if (!started || showEnd || loading) return;
     if (timeLeft === 0) {
+      if (currentWrongGuessesRef.current.length > 0) {
+        failedWordsRef.current.push({ word: currentWord, wrong_guesses: [...currentWrongGuessesRef.current] });
+        currentWrongGuessesRef.current = [];
+      }
       endGame(score);
       return;
     }
@@ -195,11 +210,18 @@ export default function Game() {
         setGuess('');
         setStrikes(STRIKES_MAX);
         setTimeLeft(TIMER_DURATION);
+        currentWrongGuessesRef.current = [];
         await fetchNextWord();
       } else {
         flashInput('error');
-        setStrikes((s) => s - 1);
+        currentWrongGuessesRef.current.push(trimmed);
+        const newStrikes = strikes - 1;
+        setStrikes(newStrikes);
         setGuess('');
+        if (newStrikes === 0) {
+          failedWordsRef.current.push({ word: currentWord, wrong_guesses: [...currentWrongGuessesRef.current] });
+          currentWrongGuessesRef.current = [];
+        }
       }
     } catch (err) {
       console.error(err);
@@ -256,6 +278,7 @@ export default function Game() {
           finalScore={finalScore}
           stats={gameStats}
           isGuest={!user}
+          insights={insights}
           onPlayAgain={() => setShowEnd(false)}
           onDismiss={() => { setShowEnd(false); setStarted(false); }}
         />

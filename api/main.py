@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer
 
-from routes import words, scores
+from routes import words, scores, insights
 
 
 @asynccontextmanager
@@ -32,6 +32,7 @@ app.add_middleware(
 
 app.include_router(words.router, prefix="/api/words", tags=["words"])
 app.include_router(scores.router, prefix="/api/scores", tags=["scores"])
+app.include_router(insights.router, prefix="/api/insights", tags=["insights"])
 
 
 @app.get("/")
