@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import type { GameStats } from './Game';
 
@@ -12,6 +13,11 @@ interface EndModalProps {
 }
 
 export default function EndModal({ darkMode, finalScore, stats, onPlayAgain, onDismiss }: EndModalProps) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onDismiss]);
   const bg = darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black';
   const subtle = darkMode ? 'text-gray-400' : 'text-gray-500';
   const outline = darkMode ? 'border-white hover:bg-gray-800' : 'border-black hover:bg-gray-100';

@@ -148,6 +148,14 @@ export default function Game() {
     endGame(score);
   }, [strikes, started, score, endGame]);
 
+  // Escape closes leave warning
+  useEffect(() => {
+    if (!showLeaveWarning) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowLeaveWarning(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [showLeaveWarning]);
+
   // Restore focus after loading completes
   useEffect(() => {
     if (!loading && started && !showEnd) {

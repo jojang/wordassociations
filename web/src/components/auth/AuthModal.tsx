@@ -40,6 +40,12 @@ export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [username, view]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   const bg = darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black';
   const inputClass = `w-full px-4 py-2 rounded-lg border text-sm outline-none ${
     darkMode

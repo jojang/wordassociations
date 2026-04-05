@@ -23,6 +23,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [stats, setStats] = useState<Record<string, GameStats>>({});
+  const [showNudge, setShowNudge] = useState(false);
 
   const border = darkMode ? 'border-gray-800' : 'border-gray-100';
   const card = darkMode ? 'border-gray-800 hover:border-gray-600 hover:bg-gray-900' : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50';
@@ -43,6 +44,10 @@ export default function Home() {
   };
 
   useEffect(() => {
+    if (!localStorage.getItem('nudge_dismissed')) setShowNudge(true);
+  }, []);
+
+  useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       if (data.user) { fetchUsername(data.user.id); fetchAllStats(data.user.id); }
@@ -55,9 +60,33 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const dismissNudge = () => {
+    localStorage.setItem('nudge_dismissed', '1');
+    setShowNudge(false);
+  };
+
   return (
     <main className={`min-h-screen flex flex-col ${darkMode ? 'bg-gray-950 text-white' : 'bg-white text-black'}`}>
       {showAuth && <AuthModal darkMode={darkMode} onClose={() => setShowAuth(false)} />}
+
+      {showNudge && !user && (
+        <div className="fixed top-14 right-6 z-40">
+          {/* Arrow pointing up */}
+          <div className={`w-3 h-3 rotate-45 border-t border-l ml-auto mr-4 -mb-1.5 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`} />
+          <div className={`rounded-xl border shadow-lg px-4 py-3 w-56 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+            <p className={`text-xs leading-relaxed mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} style={{ fontFamily: 'NeueHelvetica' }}>
+              Sign in to save your stats and track progress.
+            </p>
+            <button
+              onClick={dismissNudge}
+              className="text-xs tracking-widest text-gray-400 hover:text-gray-600 transition-colors"
+              style={{ fontFamily: 'NeueHelvetica' }}
+            >
+              GOT IT
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <header className={`w-full flex items-center justify-between px-6 py-4 border-b ${border}`}>

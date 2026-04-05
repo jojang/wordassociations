@@ -1,11 +1,19 @@
 'use client';
 
+import { useEffect } from 'react';
+
 interface RulesModalProps {
   darkMode: boolean;
   onClose: () => void;
 }
 
 export default function RulesModal({ darkMode, onClose }: RulesModalProps) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   const bg = darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black';
   const subtle = darkMode ? 'text-gray-400' : 'text-gray-600';
 
