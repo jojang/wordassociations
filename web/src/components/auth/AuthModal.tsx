@@ -106,9 +106,28 @@ export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
       <div className={`${bg} rounded-2xl p-8 max-w-sm w-full mx-4 shadow-xl`} onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-2xl mb-6 tracking-wide" style={{ fontFamily: 'KarnakPro' }}>
-          {view === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
-        </h2>
+        {/* Tabs */}
+        <div className={`relative flex rounded-full p-1 mb-6 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+          {/* Sliding pill */}
+          <div
+            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full transition-transform duration-300 ease-in-out ${darkMode ? 'bg-white' : 'bg-black'}`}
+            style={{ transform: view === 'signup' ? 'translateX(calc(100% + 8px))' : 'translateX(0)' }}
+          />
+          <button
+            onClick={() => switchView('login')}
+            className={`relative flex-1 py-1.5 rounded-full text-xs tracking-widest transition-colors duration-300 ${view === 'login' ? (darkMode ? 'text-black' : 'text-white') : 'text-gray-400'}`}
+            style={{ fontFamily: 'NeueHelvetica' }}
+          >
+            SIGN IN
+          </button>
+          <button
+            onClick={() => switchView('signup')}
+            className={`relative flex-1 py-1.5 rounded-full text-xs tracking-widest transition-colors duration-300 ${view === 'signup' ? (darkMode ? 'text-black' : 'text-white') : 'text-gray-400'}`}
+            style={{ fontFamily: 'NeueHelvetica' }}
+          >
+            SIGN UP
+          </button>
+        </div>
 
         {/* Google */}
         <button
@@ -204,10 +223,7 @@ export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
           {loading ? '...' : view === 'login' ? 'SIGN IN' : 'SIGN UP'}
         </button>
 
-        <div className="flex justify-between text-xs text-gray-400" style={{ fontFamily: 'NeueHelvetica' }}>
-          <button onClick={() => switchView(view === 'login' ? 'signup' : 'login')} className="hover:opacity-60 transition-opacity">
-            {view === 'login' ? 'Create account' : 'Already have an account?'}
-          </button>
+        <div className="flex justify-center text-xs text-gray-400" style={{ fontFamily: 'NeueHelvetica' }}>
           <button onClick={onClose} className="hover:opacity-60 transition-opacity">
             Cancel
           </button>
