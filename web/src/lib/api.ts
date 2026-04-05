@@ -25,8 +25,9 @@ export async function scoreGuess(word: string, guess: string): Promise<ScoreResp
 
 export interface Insight {
   word: string;
-  guess: string;
-  insight: string;
+  definition?: string;
+  guesses: { guess: string; insight: string }[];
+  alternatives: string[];
 }
 
 export async function getInsights(failedWords: { word: string; wrong_guesses: string[] }[]): Promise<Insight[]> {

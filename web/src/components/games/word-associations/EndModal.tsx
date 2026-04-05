@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Fragment } from 'react';
 import Link from 'next/link';
 import type { GameStats } from './Game';
 import type { Insight } from '@/lib/api';
@@ -11,12 +11,13 @@ interface EndModalProps {
   stats: GameStats | null;
   isGuest: boolean;
   insights: Insight[];
+  insightsLoading: boolean;
   onPlayAgain: () => void;
   onDismiss: () => void;
   onSignIn: () => void;
 }
 
-export default function EndModal({ darkMode, finalScore, stats, isGuest, insights, onPlayAgain, onDismiss, onSignIn }: EndModalProps) {
+export default function EndModal({ darkMode, finalScore, stats, isGuest, insights, insightsLoading, onPlayAgain, onDismiss, onSignIn }: EndModalProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss(); };
     window.addEventListener('keydown', handler);
@@ -32,36 +33,63 @@ export default function EndModal({ darkMode, finalScore, stats, isGuest, insight
         {/* Score */}
         <h2 className="text-2xl tracking-wide mb-3" style={{ fontFamily: 'KarnakPro' }}>GAME OVER</h2>
         <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>FINAL SCORE</div>
-        <div className="text-6xl mb-4" style={{ fontFamily: 'NeueHelvetica' }}>{finalScore}</div>
-
-        {/* Inline stats */}
+        <div className="text-6xl mb-2" style={{ fontFamily: 'NeueHelvetica' }}>{finalScore}</div>
         {stats && (
-          <div className="flex justify-center gap-6 mb-6" style={{ fontFamily: 'NeueHelvetica' }}>
-            <div>
-              <div className="text-xs tracking-widest text-gray-400">BEST</div>
-              <div className="text-sm">{stats.highScore}</div>
-            </div>
-            <div>
-              <div className="text-xs tracking-widest text-gray-400">GAMES</div>
-              <div className="text-sm">{stats.totalGames}</div>
-            </div>
-            <div>
-              <div className="text-xs tracking-widests text-gray-400">AVG</div>
-              <div className="text-sm">{stats.avgScore}</div>
-            </div>
+          <div className="text-xs text-gray-400 mb-5" style={{ fontFamily: 'NeueHelvetica' }}>
+            BEST <span className={darkMode ? 'text-white' : 'text-black'}>{stats.highScore}</span>
           </div>
         )}
 
         {/* Insights */}
-        {insights.length > 0 && (
-          <div className={`text-left rounded-xl border p-4 mb-6 space-y-2 ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
-            <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>INSIGHTS</div>
-            {insights.map((item, i) => (
-              <div key={i} style={{ fontFamily: 'NeueHelvetica' }}>
-                <span className="text-xs text-gray-400">{item.word} → {item.guess}: </span>
-                <span className="text-xs">{item.insight}</span>
+        {(insightsLoading || insights.length > 0) && (
+          <div className={`text-left rounded-xl border p-4 mb-6 ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
+            <div className="text-xs tracking-widest text-gray-400 mb-3" style={{ fontFamily: 'NeueHelvetica' }}>INSIGHTS</div>
+            {insightsLoading ? (
+              <div className="flex flex-col items-center justify-center py-6 gap-2">
+                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                <div className="text-xs text-gray-400" style={{ fontFamily: 'NeueHelvetica' }}>Generating insights...</div>
               </div>
-            ))}
+            ) : (
+            <div className="space-y-4">
+              {insights.map((item, i) => (
+                <div key={i}>
+                  {/* Word + definition */}
+                  <div className="mb-2">
+                    <span className="text-xs font-semibold tracking-wide" style={{ fontFamily: 'NeueHelvetica' }}>{item.word}</span>
+                    {item.definition && (
+                      <span className={`text-xs ml-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} style={{ fontFamily: 'NeueHelvetica' }}>— {item.definition}</span>
+                    )}
+                  </div>
+                  {/* Divider */}
+                  <div className={`border-t mb-2 ${darkMode ? 'border-gray-800' : 'border-gray-100'}`} />
+                  {/* Guesses */}
+                  <div className="grid gap-y-1 mb-3" style={{ gridTemplateColumns: 'auto 1fr' }}>
+                    {(item.guesses ?? []).filter((g, j, arr) => arr.findIndex(x => x.guess === g.guess) === j).map((g, j) => (
+                      <Fragment key={j}>
+                        <span className={`text-xs pr-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontFamily: 'NeueHelvetica' }}>{g.guess}</span>
+                        <span className="text-xs text-gray-400" style={{ fontFamily: 'NeueHelvetica' }}>{g.insight}</span>
+                      </Fragment>
+                    ))}
+                  </div>
+                  {/* Alternatives */}
+                  {(item.alternatives ?? []).length > 0 && (
+                    <div>
+                      <div className="text-xs tracking-widest text-gray-400 mb-1.5" style={{ fontFamily: 'NeueHelvetica' }}>STRONGER ASSOCIATIONS</div>
+                      <div className="flex gap-1 flex-wrap">
+                        {item.alternatives.map((alt, k) => (
+                          <span key={k} className={`text-xs px-2 py-0.5 rounded-full ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600'}`} style={{ fontFamily: 'NeueHelvetica' }}>{alt}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Divider between words */}
+                  {i < insights.length - 1 && (
+                    <div className={`mt-4 border-t ${darkMode ? 'border-gray-800' : 'border-gray-100'}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+            )}
           </div>
         )}
 

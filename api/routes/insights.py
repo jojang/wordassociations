@@ -32,11 +32,21 @@ async def get_insights(body: InsightRequest):
         return {"insights": []}
 
     prompt = (
-        "A player was guessing words semantically associated with target words and failed on these:\n"
+        "A player guessed words in a word association game but scored low on semantic similarity. "
+        "Scoring favors direct, everyday associations. "
+        "Use your knowledge of each target word's meaning when evaluating guesses and alternatives. "
+        "If a target word is uncommon or technical, include a short definition (max 8 words) in the 'definition' field so the player understands what it means. Leave 'definition' as an empty string for common everyday words.\n\n"
+        "Here are the target words and wrong guesses:\n"
         + "\n".join(entries)
-        + "\n\nFor each wrong guess, give one short sentence (max 12 words) explaining why it didn't score — "
-        "focus on the semantic gap. Reply as a JSON array only: "
-        '[{"word": "target", "guess": "guess", "insight": "reason"}]'
+        + "\n\nFor each target word, group all its guesses and:\n"
+        "1. For each guess: one short phrase only (max 5 words). Use noun phrases only — no verbs "
+        "like 'is' or 'this'. Vary the reasoning across guesses; avoid repeating the same label. "
+        "Be specific and descriptive — avoid vague phrases like 'weak connection'. "
+        "Prefer softer phrasing: e.g. 'loosely related', 'situational link', 'too broad', "
+        "'indirect path', 'uncommon pairing'.\n"
+        "2. Suggest 2–3 single words commonly and directly associated with the target in everyday usage.\n\n"
+        "Reply as a JSON array only, one object per target word: "
+        '[{"word": "target", "definition": "short definition or empty string", "guesses": [{"guess": "guess", "insight": "reason"}], "alternatives": ["word1", "word2"]}]'
     )
 
     message = client.messages.create(

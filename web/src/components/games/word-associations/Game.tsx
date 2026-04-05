@@ -31,6 +31,7 @@ export default function Game() {
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
   const [leaveAction, setLeaveAction] = useState<'home' | 'signout'>('home');
   const [loading, setLoading] = useState(false);
+  const [fetchingWord, setFetchingWord] = useState(false);
   const [currentWord, setCurrentWord] = useState('');
   const [guess, setGuess] = useState('');
   const [score, setScore] = useState(0);
@@ -44,6 +45,7 @@ export default function Game() {
   const [username, setUsername] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(false);
   const failedWordsRef = useRef<{ word: string; wrong_guesses: string[] }[]>([]);
   const currentWrongGuessesRef = useRef<string[]>([]);
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
@@ -78,6 +80,7 @@ export default function Game() {
 
   const fetchNextWord = useCallback(async () => {
     setLoading(true);
+    setFetchingWord(true);
     try {
       const word = await generateWord();
       setCurrentWord(word);
@@ -85,6 +88,7 @@ export default function Game() {
       console.error(err);
     } finally {
       setLoading(false);
+      setFetchingWord(false);
     }
   }, []);
 
@@ -131,7 +135,11 @@ export default function Game() {
     setInsights([]);
     const failed = failedWordsRef.current;
     if (failed.length > 0 && user) {
-      getInsights(failed).then(setInsights).catch(() => {});
+      setInsightsLoading(true);
+      getInsights(failed)
+        .then(setInsights)
+        .catch(() => {})
+        .finally(() => setInsightsLoading(false));
     }
     failedWordsRef.current = [];
     currentWrongGuessesRef.current = [];
@@ -279,6 +287,7 @@ export default function Game() {
           stats={gameStats}
           isGuest={!user}
           insights={insights}
+          insightsLoading={insightsLoading}
           onPlayAgain={() => setShowEnd(false)}
           onDismiss={() => { setShowEnd(false); setStarted(false); }}
           onSignIn={() => { setShowEnd(false); setStarted(false); setShowAuth(true); }}
@@ -411,7 +420,7 @@ export default function Game() {
         {/* Current word */}
         {started && !showEnd && (
           <div className="text-4xl tracking-wide mb-12" style={{ fontFamily: 'NeueHelvetica' }}>
-            {loading
+            {fetchingWord
               ? <div className={`h-10 w-32 rounded-lg animate-pulse ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`} />
               : currentWord}
           </div>
