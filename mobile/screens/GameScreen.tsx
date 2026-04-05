@@ -43,6 +43,7 @@ export default function GameScreen({ navigation }: Props) {
   const failedWordsRef = useRef<{ word: string; wrong_guesses: string[] }[]>([]);
   const currentWrongGuessesRef = useRef<string[]>([]);
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
 
   const fetchStats = useCallback(async (userId: string) => {
@@ -104,6 +105,17 @@ export default function GameScreen({ navigation }: Props) {
     }
   }, []);
 
+  const triggerShake = useCallback(() => {
+    shakeAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 8, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 6, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -6, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
+    ]).start();
+  }, [shakeAnim]);
+
   const flashGlow = useCallback((color: 'red' | 'green') => {
     setGlowColor(color);
     glowAnim.setValue(1);
@@ -157,7 +169,7 @@ export default function GameScreen({ navigation }: Props) {
     const word = currentWord.toLowerCase();
 
     if (!trimmed || trimmed.length < 3 || word.includes(trimmed) || trimmed.includes(word)) {
-      flashGlow('red');
+      triggerShake();
       setGuess('');
       setTimeout(() => inputRef.current?.focus(), 50);
       return;
@@ -211,7 +223,7 @@ export default function GameScreen({ navigation }: Props) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Word Associations</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => setShowHelp(true)} hitSlop={12} style={{ marginRight: 12 }}>
+          <TouchableOpacity onPress={() => setShowHelp(true)} hitSlop={12}>
             <HelpCircle size={18} color="#9ca3af" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowStats((v) => !v)} hitSlop={12}>
@@ -282,7 +294,7 @@ export default function GameScreen({ navigation }: Props) {
           </View>
 
           {/* Glow + Input */}
-          <Animated.View style={[styles.inputWrapper, glowStyle]}>
+          <Animated.View style={[styles.inputWrapper, glowStyle, { transform: [{ translateX: shakeAnim }] }]}>
             <TextInput
               ref={inputRef}
               style={styles.input}
@@ -386,7 +398,7 @@ const styles = StyleSheet.create({
   },
   backText: { fontSize: 13, letterSpacing: 1, color: '#9ca3af' },
   headerTitle: { fontSize: 16, letterSpacing: 0.5, color: '#111' },
-  headerRight: { width: 70, alignItems: 'flex-end' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   statsOverlay: { flex: 1, alignItems: 'flex-end', paddingRight: 20 },
   statsPopoverCaret: {
     position: 'absolute',
