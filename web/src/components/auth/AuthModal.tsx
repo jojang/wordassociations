@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { checkUsernameAvailable, getEmailByUsername, upsertProfile } from '@/lib/api';
 
 interface AuthModalProps {
   darkMode: boolean;
@@ -33,12 +34,8 @@ export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
     setUsernameStatus('checking');
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('display_name', username.trim())
-        .maybeSingle();
-      setUsernameStatus(data ? 'taken' : 'available');
+      const available = await checkUsernameAvailable(username.trim());
+      setUsernameStatus(available ? 'available' : 'taken');
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [username, view]);
@@ -78,7 +75,7 @@ export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
     setLoading(true);
     try {
       if (view === 'login') {
-        const { data: resolvedEmail } = await supabase.rpc('get_email_by_username', { p_username: loginUsername });
+        const resolvedEmail = await getEmailByUsername(loginUsername);
         if (!resolvedEmail) throw new Error('Username not found');
         const { error } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
         if (error) throw error;
@@ -86,9 +83,7 @@ export default function AuthModal({ darkMode, onClose }: AuthModalProps) {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         if (data.user) {
-          await supabase
-            .from('profiles')
-            .upsert({ id: data.user.id, display_name: username.trim() });
+          await upsertProfile(data.user.id, username.trim());
         }
       }
       onClose();

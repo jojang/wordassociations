@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Sun, Moon, CircleHelp, ChevronLeft, ChevronDown, BarChart2 } from 'lucide-react';
-import { generateWord, scoreGuess, getInsights } from '@/lib/api';
+import { generateWord, scoreGuess, getInsights, getProfile, getUserStats, saveUserStats } from '@/lib/api';
 import type { Insight } from '@/lib/api';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { supabase } from '@/lib/supabase';
@@ -51,17 +51,12 @@ export default function Game() {
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
 
   const fetchUsername = async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('display_name').eq('id', userId).single();
-    setUsername(data?.display_name ?? null);
+    const displayName = await getProfile(userId);
+    setUsername(displayName);
   };
 
   const fetchStats = async (userId: string) => {
-    const { data } = await supabase
-      .from('user_stats')
-      .select('total_games, high_score, avg_score')
-      .eq('user_id', userId)
-      .eq('game', 'word-associations')
-      .single();
+    const data = await getUserStats(userId, 'word-associations');
     if (data) setGameStats({ highScore: data.high_score, totalGames: data.total_games, avgScore: data.avg_score });
   };
 
@@ -101,27 +96,8 @@ export default function Game() {
 
   const saveStats = useCallback(async (final: number) => {
     if (!user) return;
-    const { data: existing } = await supabase
-      .from('user_stats')
-      .select('total_games, high_score, avg_score')
-      .eq('user_id', user.id)
-      .eq('game', 'word-associations')
-      .single();
-
-    const totalGames = (existing?.total_games ?? 0) + 1;
-    const highScore = Math.max(existing?.high_score ?? 0, final);
-    const avgScore = Math.round(((existing?.avg_score ?? 0) * (existing?.total_games ?? 0) + final) / totalGames);
-
-    await supabase.from('user_stats').upsert({
-      user_id: user.id,
-      game: 'word-associations',
-      total_games: totalGames,
-      high_score: highScore,
-      avg_score: avgScore,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,game' });
-
-    setGameStats({ highScore, totalGames, avgScore });
+    const updated = await saveUserStats(user.id, 'word-associations', final);
+    if (updated) setGameStats({ highScore: updated.high_score, totalGames: updated.total_games, avgScore: updated.avg_score });
   }, [user]);
 
   const endGame = useCallback(async (final: number) => {

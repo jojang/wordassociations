@@ -9,7 +9,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer
 
-from routes import words, scores, insights
+from routes.games import word_associations
+from routes import users
 
 
 @asynccontextmanager
@@ -30,9 +31,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(words.router, prefix="/api/words", tags=["words"])
-app.include_router(scores.router, prefix="/api/scores", tags=["scores"])
-app.include_router(insights.router, prefix="/api/insights", tags=["insights"])
+app.include_router(word_associations.router, prefix="/api/games/word-associations", tags=["word-associations"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
 
 
 @app.get("/")

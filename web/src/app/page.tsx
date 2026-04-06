@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Sun, Moon, LogIn, ChevronDown, BarChart2 } from 'lucide-react';
-import type { GameStats } from '@/components/games/word-associations/Game';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { supabase } from '@/lib/supabase';
+import { getProfile, getUserStats } from '@/lib/api';
+
+type GameStats = { highScore: number; totalGames: number; avgScore: number };
 import AuthModal from '@/components/auth/AuthModal';
 import type { User } from '@supabase/supabase-js';
 
@@ -30,17 +32,18 @@ export default function Home() {
   const iconBtn = darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black';
 
   const fetchUsername = async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('display_name').eq('id', userId).single();
-    setUsername(data?.display_name ?? null);
+    const displayName = await getProfile(userId);
+    setUsername(displayName);
   };
 
   const fetchAllStats = async (userId: string) => {
-    const { data } = await supabase.from('user_stats').select('game, total_games, high_score, avg_score').eq('user_id', userId);
-    if (data) {
-      const mapped: Record<string, GameStats> = {};
-      data.forEach((row) => { mapped[row.game] = { highScore: row.high_score, totalGames: row.total_games, avgScore: row.avg_score }; });
-      setStats(mapped);
-    }
+    const mapped: Record<string, GameStats> = {};
+    const games = ['word-associations'];
+    await Promise.all(games.map(async (game) => {
+      const data = await getUserStats(userId, game);
+      if (data) mapped[game] = { highScore: data.high_score, totalGames: data.total_games, avgScore: data.avg_score };
+    }));
+    setStats(mapped);
   };
 
   useEffect(() => {
