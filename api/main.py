@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer
 
-from routes.games import word_associations
+from routes.games import word_associations, odd_one_out
 from routes import users
 
 
@@ -32,6 +32,7 @@ app.add_middleware(
 )
 
 app.include_router(word_associations.router, prefix="/api/games/word-associations", tags=["word-associations"])
+app.include_router(odd_one_out.router, prefix="/api/games/odd-one-out", tags=["odd-one-out"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 
 

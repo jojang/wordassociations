@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { Sun, Moon, LogIn, ChevronDown, BarChart2 } from 'lucide-react';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { supabase } from '@/lib/supabase';
-import { getProfile, getUserStats } from '@/lib/api';
+import { getProfile, getUserStats, getOddOneOutStats } from '@/lib/api';
+import type { OddOneOutStats } from '@/lib/api';
 
 type GameStats = { highScore: number; totalGames: number; avgScore: number };
 import AuthModal from '@/components/auth/AuthModal';
@@ -17,6 +18,11 @@ const GAMES = [
     title: 'Word Associations',
     description: 'Guess words associated with a given word before you run out of lives.',
   },
+  {
+    slug: 'odd-one-out',
+    title: 'Odd One Out',
+    description: 'Find the word that doesn\'t belong. Five daily puzzles, increasing in difficulty.',
+  },
 ];
 
 export default function Home() {
@@ -25,6 +31,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [stats, setStats] = useState<Record<string, GameStats>>({});
+  const [ooStats, setOoStats] = useState<OddOneOutStats | null>(null);
   const [showNudge, setShowNudge] = useState(false);
 
   const border = darkMode ? 'border-gray-800' : 'border-gray-100';
@@ -38,12 +45,13 @@ export default function Home() {
 
   const fetchAllStats = async (userId: string) => {
     const mapped: Record<string, GameStats> = {};
-    const games = ['word-associations'];
-    await Promise.all(games.map(async (game) => {
-      const data = await getUserStats(userId, game);
-      if (data) mapped[game] = { highScore: data.high_score, totalGames: data.total_games, avgScore: data.avg_score };
-    }));
+    const [waData, ooData] = await Promise.all([
+      getUserStats(userId, 'word-associations'),
+      getOddOneOutStats(userId),
+    ]);
+    if (waData) mapped['word-associations'] = { highScore: waData.high_score, totalGames: waData.total_games, avgScore: waData.avg_score };
     setStats(mapped);
+    setOoStats(ooData);
   };
 
   useEffect(() => {
@@ -58,7 +66,7 @@ export default function Home() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) { fetchUsername(session.user.id); fetchAllStats(session.user.id); }
-      else { setUsername(null); setStats({}); }
+      else { setUsername(null); setStats({}); setOoStats(null); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -137,6 +145,10 @@ export default function Home() {
         <div className="grid gap-3 w-full max-w-sm">
           {GAMES.map((game) => {
             const gameStats = stats[game.slug] ?? null;
+            const isOoo = game.slug === 'odd-one-out';
+            const hasStats = isOoo ? !!ooStats : !!gameStats;
+            const maxDist = ooStats ? Math.max(...ooStats.distribution, 1) : 1;
+
             return (
               <div key={game.slug}>
                 <Link
@@ -147,19 +159,41 @@ export default function Home() {
                     <div className="text-base tracking-wide" style={{ fontFamily: 'KarnakPro' }}>{game.title}</div>
                     <div className="relative group/stats" onClick={(e) => e.preventDefault()}>
                       <BarChart2 size={15} className={`transition-colors ${darkMode ? 'text-gray-600 hover:text-gray-400' : 'text-gray-300 hover:text-gray-500'}`} />
-                      <div className={`absolute left-full top-1/2 -translate-y-1/2 ml-3 rounded-xl border shadow-lg p-3 opacity-0 group-hover/stats:opacity-100 pointer-events-none group-hover/stats:pointer-events-auto transition-opacity z-10 ${user && gameStats ? 'w-48' : 'w-32'} ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                        {user && gameStats ? (
+                      <div className={`absolute left-full top-1/2 -translate-y-1/2 ml-3 rounded-xl border shadow-lg p-3 opacity-0 group-hover/stats:opacity-100 pointer-events-none group-hover/stats:pointer-events-auto transition-opacity z-10 ${user && hasStats ? 'w-44' : 'w-36'} ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                        {user && hasStats ? (
                           <>
-                            <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>YOUR STATS</div>
-                            <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>
-                              <span className="text-gray-400">Best</span><span>{gameStats.highScore}</span>
+                            <div className="flex items-center justify-between mb-2" style={{ fontFamily: 'NeueHelvetica' }}>
+                              <span className="text-xs tracking-widest text-gray-400">YOUR STATS</span>
+                              <span className="text-xs text-gray-400">{isOoo ? ooStats!.total_games : gameStats!.totalGames} {(isOoo ? ooStats!.total_games : gameStats!.totalGames) === 1 ? 'play' : 'plays'}</span>
                             </div>
-                            <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
-                              <span className="text-gray-400">Games</span><span>{gameStats.totalGames}</span>
-                            </div>
-                            <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
-                              <span className="text-gray-400">Avg</span><span>{gameStats.avgScore}</span>
-                            </div>
+                            <div className={`border-t mb-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`} />
+                            {isOoo && ooStats ? (
+                              ooStats.distribution.map((count, i) => (
+                                <div key={i} className="flex items-center gap-1.5 mb-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                                  <span className="text-xs text-gray-400 w-3 text-right">{i}</span>
+                                  <div className="flex-1 h-2.5 rounded overflow-hidden" style={{ background: darkMode ? '#1f2937' : '#f3f4f6' }}>
+                                    <div
+                                      className="h-full rounded"
+                                      style={{
+                                        width: `${(count / maxDist) * 100}%`,
+                                        background: i === ooStats.last_score ? (darkMode ? '#fff' : '#000') : (darkMode ? '#4b5563' : '#d1d5db'),
+                                        minWidth: count > 0 ? '0.5rem' : 0,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-gray-400 w-3">{count}</span>
+                                </div>
+                              ))
+                            ) : gameStats ? (
+                              <>
+                                <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>
+                                  <span className="text-gray-400">Best</span><span>{gameStats.highScore}</span>
+                                </div>
+                                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                                  <span className="text-gray-400">Avg</span><span>{gameStats.avgScore}</span>
+                                </div>
+                              </>
+                            ) : null}
                           </>
                         ) : user ? (
                           <div className="text-xs text-gray-400 text-center" style={{ fontFamily: 'NeueHelvetica' }}>No game data</div>
