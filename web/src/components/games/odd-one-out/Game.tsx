@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Sun, Moon, ChevronLeft, BarChart2 } from 'lucide-react';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { supabase } from '@/lib/supabase';
-import { getDailyPuzzle, getOddOneOutStats, completeOddOneOut } from '@/lib/api';
+import { getDailyPuzzle, getOddOneOutStats, completeOddOneOut, getProfile } from '@/lib/api';
 import type { PuzzleSet, OddOneOutStats } from '@/lib/api';
 import AuthModal from '@/components/auth/AuthModal';
 import type { User } from '@supabase/supabase-js';
@@ -14,6 +14,7 @@ import type { User } from '@supabase/supabase-js';
 export default function Game() {
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [user, setUser] = useState<User | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sets, setSets] = useState<PuzzleSet[]>([]);
@@ -28,10 +29,20 @@ export default function Game() {
   const [stats, setStats] = useState<OddOneOutStats | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const fetchUsername = async (userId: string) => {
+    const displayName = await getProfile(userId);
+    setUsername(displayName);
+  };
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) fetchUsername(data.user.id);
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) fetchUsername(session.user.id);
+      else setUsername(null);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -39,6 +50,10 @@ export default function Game() {
   useEffect(() => {
     const load = async () => {
       try {
+        setPicked(null);
+        setShowResult(false);
+        setCurrentResult(null);
+
         const puzzle = await getDailyPuzzle();
         setSets(puzzle.sets);
         setToday(puzzle.date);
@@ -265,7 +280,7 @@ export default function Game() {
           <button onClick={toggleDarkMode} className={`p-2 rounded-lg transition-colors ${iconBtn}`}>
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          {!user && (
+          {!user ? (
             <button
               onClick={() => setShowAuth(true)}
               className={`px-4 py-1.5 rounded-lg text-sm tracking-widest transition-colors ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-900' : 'text-gray-500 hover:text-black hover:bg-gray-50'}`}
@@ -273,6 +288,25 @@ export default function Game() {
             >
               SIGN IN
             </button>
+          ) : (
+            <div className="relative group">
+              <button
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-black'}`}
+                style={{ fontFamily: 'NeueHelvetica' }}
+              >
+                <span className="tracking-wide">{username ?? user.email}</span>
+                <span className="text-xs">▾</span>
+              </button>
+              <div className={`absolute right-0 mt-1 w-36 rounded-xl border shadow-lg overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity z-10 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className={`w-full px-4 py-3 text-xs tracking-widest text-left transition-colors ${darkMode ? 'text-gray-400 hover:bg-gray-800 hover:text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}
+                  style={{ fontFamily: 'NeueHelvetica' }}
+                >
+                  SIGN OUT
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
