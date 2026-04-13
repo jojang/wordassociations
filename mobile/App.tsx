@@ -5,11 +5,13 @@ import { useFonts } from 'expo-font';
 import HomeScreen from './screens/HomeScreen';
 import GameScreen from './screens/GameScreen';
 import AuthScreen from './screens/AuthScreen';
+import OddOneOutScreen from './screens/OddOneOutScreen';
 
 export type RootStackParamList = {
   Home: undefined;
   Game: undefined;
   Auth: undefined;
+  OddOneOut: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -29,6 +31,7 @@ export default function App() {
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Game" component={GameScreen} />
           <Stack.Screen name="Auth" component={AuthScreen} />
+          <Stack.Screen name="OddOneOut" component={OddOneOutScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

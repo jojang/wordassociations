@@ -218,7 +218,7 @@ export default function GameScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => { setShowStats(false); if (started && !showEnd) { setShowLeaveWarning(true); } else { navigation.goBack(); } }}>
+        <TouchableOpacity onPress={() => { setShowStats(false); if (started && !showEnd) { setShowLeaveWarning(true); } else { setShowEnd(false); navigation.goBack(); } }}>
           <Text style={styles.backText}>← HOME</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Word Associations</Text>
@@ -239,9 +239,12 @@ export default function GameScreen({ navigation }: Props) {
             <View style={styles.statsPopoverCaret} />
             {user && gameStats ? (
               <>
-                <Text style={styles.statsTitle}>YOUR STATS</Text>
+                <View style={styles.statsHeader}>
+                  <Text style={styles.statsTitle}>YOUR STATS</Text>
+                  <Text style={styles.statsLabel}>{gameStats.totalGames} {gameStats.totalGames === 1 ? 'play' : 'plays'}</Text>
+                </View>
+                <View style={styles.statsHDivider} />
                 <View style={styles.statsRow}><Text style={styles.statsLabel}>Best</Text><Text style={styles.statsValue}>{gameStats.highScore}</Text></View>
-                <View style={styles.statsRow}><Text style={styles.statsLabel}>Games</Text><Text style={styles.statsValue}>{gameStats.totalGames}</Text></View>
                 <View style={styles.statsRow}><Text style={styles.statsLabel}>Avg</Text><Text style={styles.statsValue}>{gameStats.avgScore}</Text></View>
               </>
             ) : user ? (
@@ -354,7 +357,7 @@ export default function GameScreen({ navigation }: Props) {
       </Modal>
 
       {/* End Modal */}
-      <Modal visible={showEnd} transparent animationType="fade">
+      <Modal visible={showEnd} transparent animationType="none">
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => { setShowEnd(false); setStarted(false); }}>
           <TouchableOpacity style={styles.modal} activeOpacity={1} onPress={() => {}}>
             <Text style={styles.modalTitle}>GAME OVER</Text>
@@ -395,7 +398,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  backText: { fontSize: 13, letterSpacing: 1, color: '#9ca3af', fontFamily: 'NeueHelvetica' },
+  backText: { fontSize: 13, letterSpacing: 0.5, color: '#9ca3af', fontFamily: 'KarnakPro' },
   headerTitle: { fontSize: 16, letterSpacing: 0.5, color: '#111', fontFamily: 'KarnakPro' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   statsOverlay: { flex: 1, alignItems: 'flex-end', paddingRight: 20 },
@@ -423,7 +426,9 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     minWidth: 140,
   },
-  statsTitle: { fontSize: 9, letterSpacing: 3, color: '#9ca3af', marginBottom: 8, fontFamily: 'NeueHelvetica' },
+  statsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  statsHDivider: { height: 1, backgroundColor: '#f3f4f6', marginBottom: 8 },
+  statsTitle: { fontSize: 9, letterSpacing: 3, color: '#9ca3af', fontFamily: 'NeueHelvetica' },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   statsLabel: { fontSize: 11, color: '#9ca3af', fontFamily: 'NeueHelvetica' },
   statsValue: { fontSize: 11, color: '#111', fontFamily: 'NeueHelvetica' },

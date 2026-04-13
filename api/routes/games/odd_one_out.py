@@ -118,6 +118,11 @@ def complete_game(body: CompleteRequest):
     )
 
     data = (existing.data if existing else None) or {}
+
+    # Idempotent: don't double-count if already recorded for today
+    if data.get("last_played_date") == body.date:
+        return {"stats": data}
+
     total_games = (data.get("total_games") or 0) + 1
     distribution = data.get("distribution") or [0, 0, 0, 0, 0, 0]
     distribution[body.score] += 1

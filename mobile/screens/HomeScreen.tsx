@@ -7,6 +7,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BarChart2 } from 'lucide-react-native';
 import { RootStackParamList } from '../App';
 import { supabase } from '../lib/supabase';
+import { getOddOneOutStats } from '../lib/api';
+import type { OddOneOutStats } from '../lib/api';
 import type { User } from '@supabase/supabase-js';
 
 type GameStats = { highScore: number; totalGames: number; avgScore: number };
@@ -20,7 +22,9 @@ export default function HomeScreen({ navigation }: Props) {
   const [username, setUsername] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
-  const [showStats, setShowStats] = useState(false);
+  const [showWAStats, setShowWAStats] = useState(false);
+  const [ooStats, setOoStats] = useState<OddOneOutStats | null>(null);
+  const [showOOStats, setShowOOStats] = useState(false);
 
   const fetchUsername = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('display_name').eq('id', userId).single();
@@ -37,18 +41,36 @@ export default function HomeScreen({ navigation }: Props) {
     if (data) setGameStats({ highScore: data.high_score, totalGames: data.total_games, avgScore: data.avg_score });
   };
 
+  const fetchOOStats = async (userId: string) => {
+    const s = await getOddOneOutStats(userId);
+    if (s) setOoStats(s);
+  };
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
-      if (data.user) { fetchUsername(data.user.id); fetchStats(data.user.id); }
+      if (data.user) {
+        fetchUsername(data.user.id);
+        fetchStats(data.user.id);
+        fetchOOStats(data.user.id);
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) { fetchUsername(session.user.id); fetchStats(session.user.id); }
-      else { setUsername(null); setGameStats(null); }
+      if (session?.user) {
+        fetchUsername(session.user.id);
+        fetchStats(session.user.id);
+        fetchOOStats(session.user.id);
+      } else {
+        setUsername(null);
+        setGameStats(null);
+        setOoStats(null);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  const maxDist = ooStats ? Math.max(...ooStats.distribution, 1) : 1;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -90,20 +112,28 @@ export default function HomeScreen({ navigation }: Props) {
         <Text style={styles.title}>Wordbook</Text>
         <Text style={styles.subtitle}>PICK A GAME</Text>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Game')} activeOpacity={0.8}>
+        {/* Word Associations card */}
+        <TouchableOpacity style={[styles.card, { marginBottom: 12 }]} onPress={() => navigation.navigate('Game')} activeOpacity={0.8}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Word Associations</Text>
-            <TouchableOpacity onPress={(e) => { e.stopPropagation(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setShowStats((v) => !v); }} hitSlop={24} activeOpacity={1}>
-              <BarChart2 size={17} color={showStats ? '#000' : '#9ca3af'} />
+            <TouchableOpacity
+              onPress={(e) => { e.stopPropagation(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setShowWAStats((v) => !v); }}
+              hitSlop={24}
+              activeOpacity={1}
+            >
+              <BarChart2 size={17} color={showWAStats ? '#000' : '#9ca3af'} />
             </TouchableOpacity>
           </View>
-          {showStats && (
+          {showWAStats && (
             <View style={styles.statsPopover}>
               {user && gameStats ? (
                 <>
-                  <Text style={styles.statsTitle}>YOUR STATS</Text>
+                  <View style={styles.statsHeader}>
+                    <Text style={styles.statsTitle}>YOUR STATS</Text>
+                    <Text style={styles.statsLabel}>{gameStats.totalGames} {gameStats.totalGames === 1 ? 'play' : 'plays'}</Text>
+                  </View>
+                  <View style={styles.statsDivider} />
                   <View style={styles.statsRow}><Text style={styles.statsLabel}>Best</Text><Text style={styles.statsValue}>{gameStats.highScore}</Text></View>
-                  <View style={styles.statsRow}><Text style={styles.statsLabel}>Games</Text><Text style={styles.statsValue}>{gameStats.totalGames}</Text></View>
                   <View style={styles.statsRow}><Text style={styles.statsLabel}>Avg</Text><Text style={styles.statsValue}>{gameStats.avgScore}</Text></View>
                 </>
               ) : user ? (
@@ -114,6 +144,56 @@ export default function HomeScreen({ navigation }: Props) {
             </View>
           )}
           <Text style={styles.cardDesc}>Guess words associated with a given word before you run out of lives.</Text>
+        </TouchableOpacity>
+
+        {/* Odd One Out card */}
+        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('OddOneOut')} activeOpacity={0.8}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Odd One Out</Text>
+            <TouchableOpacity
+              onPress={(e) => { e.stopPropagation(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setShowOOStats((v) => !v); }}
+              hitSlop={24}
+              activeOpacity={1}
+            >
+              <BarChart2 size={17} color={showOOStats ? '#000' : '#9ca3af'} />
+            </TouchableOpacity>
+          </View>
+          {showOOStats && (
+            <View style={styles.statsPopover}>
+              {user && ooStats ? (
+                <>
+                  <View style={styles.statsHeader}>
+                    <Text style={styles.statsTitle}>YOUR STATS</Text>
+                    <Text style={styles.statsLabel}>{ooStats.total_games} {ooStats.total_games === 1 ? 'play' : 'plays'}</Text>
+                  </View>
+                  <View style={styles.statsDivider} />
+                  {ooStats.distribution.map((count, i) => (
+                    <View key={i} style={styles.distRow}>
+                      <Text style={styles.distNum}>{i}</Text>
+                      <View style={styles.distBarBg}>
+                        <View
+                          style={[
+                            styles.distBarFill,
+                            {
+                              width: `${(count / maxDist) * 100}%` as any,
+                              backgroundColor: '#111',
+                              minWidth: count > 0 ? 20 : 0,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.distCount}>{count}</Text>
+                    </View>
+                  ))}
+                </>
+              ) : user ? (
+                <Text style={styles.statsLabel}>No game data</Text>
+              ) : (
+                <Text style={styles.statsLabel}>Sign in to view your stats</Text>
+              )}
+            </View>
+          )}
+          <Text style={styles.cardDesc}>Find the word that doesn't belong. Five daily puzzles, increasing in difficulty.</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -173,8 +253,15 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     marginBottom: 8,
   },
-  statsTitle: { fontSize: 9, letterSpacing: 3, color: '#9ca3af', marginBottom: 8, fontFamily: 'NeueHelvetica' },
+  statsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  statsTitle: { fontSize: 9, letterSpacing: 3, color: '#9ca3af', fontFamily: 'NeueHelvetica' },
+  statsDivider: { height: 1, backgroundColor: '#f3f4f6', marginBottom: 10 },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   statsLabel: { fontSize: 11, color: '#9ca3af', fontFamily: 'NeueHelvetica' },
   statsValue: { fontSize: 11, color: '#111', fontFamily: 'NeueHelvetica' },
+  distRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 5 },
+  distNum: { fontSize: 11, color: '#9ca3af', width: 12, textAlign: 'right', fontFamily: 'NeueHelvetica' },
+  distBarBg: { flex: 1, height: 12, backgroundColor: '#f3f4f6', borderRadius: 3, overflow: 'hidden' },
+  distBarFill: { height: '100%', borderRadius: 3 },
+  distCount: { fontSize: 11, color: '#9ca3af', width: 16, fontFamily: 'NeueHelvetica' },
 });
