@@ -38,7 +38,9 @@ export default function Game() {
   const [strikes, setStrikes] = useState(STRIKES_MAX);
   const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
   const [inputState, setInputState] = useState<InputState>('');
+  const [invalidMsg, setInvalidMsg] = useState('');
   const [finalScore, setFinalScore] = useState(0);
+  const [isNewBest, setIsNewBest] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -94,6 +96,11 @@ export default function Game() {
     setTimeout(() => setInputState(''), 500);
   }, []);
 
+  const showInvalidMsg = useCallback((msg: string) => {
+    setInvalidMsg(msg);
+    setTimeout(() => setInvalidMsg(''), 1100);
+  }, []);
+
   const saveStats = useCallback(async (final: number) => {
     if (!user) return;
     const updated = await saveUserStats(user.id, 'word-associations', final);
@@ -102,6 +109,7 @@ export default function Game() {
 
   const endGame = useCallback(async (final: number) => {
     setFinalScore(final);
+    setIsNewBest(!gameStats || final > gameStats.highScore);
     setScore(0);
     setStrikes(STRIKES_MAX);
     setTimeLeft(TIMER_DURATION);
@@ -175,12 +183,21 @@ export default function Game() {
 
     if (trimmed.length < 3) {
       flashInput('invalid');
+      showInvalidMsg('Too short — min 3 letters');
+      setGuess('');
+      return;
+    }
+
+    if (trimmed === word) {
+      flashInput('invalid');
+      showInvalidMsg('Same as the given word');
       setGuess('');
       return;
     }
 
     if (word.includes(trimmed) || trimmed.includes(word)) {
       flashInput('invalid');
+      showInvalidMsg('Must not contain the given word');
       setGuess('');
       return;
     }
@@ -260,6 +277,7 @@ export default function Game() {
         <EndModal
           darkMode={darkMode}
           finalScore={finalScore}
+          isNewBest={isNewBest}
           stats={gameStats}
           isGuest={!user}
           insights={insights}
@@ -405,17 +423,22 @@ export default function Game() {
 
         {/* Input */}
         {started && (
-          <input
-            ref={inputRef}
-            value={guess}
-            onChange={(e) => setGuess(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={loading ? '' : 'Enter word here...'}
-            disabled={loading}
-            className={inputClass}
-            style={inputStyle}
-            autoFocus
-          />
+          <>
+            <input
+              ref={inputRef}
+              value={guess}
+              onChange={(e) => setGuess(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={loading ? '' : 'Enter word here...'}
+              disabled={loading}
+              className={inputClass}
+              style={inputStyle}
+              autoFocus
+            />
+            <p className="text-xs text-red-400 mt-2 tracking-wide h-4" style={{ fontFamily: 'NeueHelvetica' }}>
+              {invalidMsg}
+            </p>
+          </>
         )}
 
         {/* Start button */}

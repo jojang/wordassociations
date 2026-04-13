@@ -44,6 +44,8 @@ export default function GameScreen({ navigation }: Props) {
   const currentWrongGuessesRef = useRef<string[]>([]);
   const glowAnim = useRef(new Animated.Value(0)).current;
   const shakeAnim = useRef(new Animated.Value(0)).current;
+  const invalidMsgAnim = useRef(new Animated.Value(0)).current;
+  const [invalidMsg, setInvalidMsg] = useState('');
   const inputRef = useRef<TextInput>(null);
 
   const fetchStats = useCallback(async (userId: string) => {
@@ -116,6 +118,15 @@ export default function GameScreen({ navigation }: Props) {
     ]).start();
   }, [shakeAnim]);
 
+  const showInvalidMsg = useCallback((msg: string) => {
+    setInvalidMsg(msg);
+    invalidMsgAnim.setValue(1);
+    Animated.sequence([
+      Animated.delay(800),
+      Animated.timing(invalidMsgAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start();
+  }, [invalidMsgAnim]);
+
   const flashGlow = useCallback((color: 'red' | 'green') => {
     setGlowColor(color);
     glowAnim.setValue(1);
@@ -168,8 +179,23 @@ export default function GameScreen({ navigation }: Props) {
     const trimmed = guess.trim().toLowerCase();
     const word = currentWord.toLowerCase();
 
-    if (!trimmed || trimmed.length < 3 || word.includes(trimmed) || trimmed.includes(word)) {
+    if (!trimmed || trimmed.length < 3) {
       triggerShake();
+      showInvalidMsg('Too short — min 3 letters');
+      setGuess('');
+      setTimeout(() => inputRef.current?.focus(), 50);
+      return;
+    }
+    if (trimmed === word) {
+      triggerShake();
+      showInvalidMsg('Same as the given word');
+      setGuess('');
+      setTimeout(() => inputRef.current?.focus(), 50);
+      return;
+    }
+    if (word.includes(trimmed) || trimmed.includes(word)) {
+      triggerShake();
+      showInvalidMsg('Must not contain the given word');
       setGuess('');
       setTimeout(() => inputRef.current?.focus(), 50);
       return;
@@ -264,6 +290,7 @@ export default function GameScreen({ navigation }: Props) {
           </TouchableOpacity>
         </TouchableOpacity>
       ) : (
+        <>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.gameArea}>
           {/* Stats pill */}
           <View style={styles.statsPill}>
@@ -312,6 +339,10 @@ export default function GameScreen({ navigation }: Props) {
             />
           </Animated.View>
         </KeyboardAvoidingView>
+        <Animated.Text style={[styles.invalidMsg, { opacity: invalidMsgAnim }]}>
+          {invalidMsg}
+        </Animated.Text>
+        </>
       )}
 
       {/* Leave Warning Modal */}
@@ -362,7 +393,14 @@ export default function GameScreen({ navigation }: Props) {
           <TouchableOpacity style={styles.modal} activeOpacity={1} onPress={() => {}}>
             <Text style={styles.modalTitle}>GAME OVER</Text>
             <Text style={styles.modalSubtitle}>FINAL SCORE</Text>
-            <Text style={styles.modalScore}>{finalScore}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={styles.modalScore}>{finalScore}</Text>
+              {gameStats && finalScore > gameStats.highScore && (
+                <View style={styles.newBestBadge}>
+                  <Text style={styles.newBestText}>NEW BEST</Text>
+                </View>
+              )}
+            </View>
             {gameStats && (
               <Text style={styles.modalBest}>
                 BEST <Text style={{ color: '#111' }}>{gameStats.highScore}</Text>
@@ -494,5 +532,8 @@ const styles = StyleSheet.create({
   modalSubtitle: { fontSize: 10, letterSpacing: 4, color: '#9ca3af', marginBottom: 4, fontFamily: 'NeueHelvetica' },
   modalScore: { fontSize: 64, marginBottom: 4, color: '#111', fontFamily: 'KarnakPro' },
   modalBest: { fontSize: 11, letterSpacing: 3, color: '#9ca3af', marginBottom: 24, fontFamily: 'NeueHelvetica' },
+  invalidMsg: { fontSize: 11, letterSpacing: 1, color: '#ef4444', textAlign: 'center', marginTop: 8, fontFamily: 'NeueHelvetica' },
+  newBestBadge: { backgroundColor: '#111', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'center' },
+  newBestText: { fontSize: 9, letterSpacing: 2, color: '#fff', fontFamily: 'NeueHelvetica' },
   helpText: { fontSize: 13, color: '#6b7280', lineHeight: 20, letterSpacing: 0.3, fontFamily: 'NeueHelvetica' },
 });

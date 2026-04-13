@@ -8,6 +8,7 @@ import type { Insight } from '@/lib/api';
 interface EndModalProps {
   darkMode: boolean;
   finalScore: number;
+  isNewBest: boolean;
   stats: GameStats | null;
   isGuest: boolean;
   insights: Insight[];
@@ -17,7 +18,7 @@ interface EndModalProps {
   onSignIn: () => void;
 }
 
-export default function EndModal({ darkMode, finalScore, stats, isGuest, insights, insightsLoading, onPlayAgain, onDismiss, onSignIn }: EndModalProps) {
+export default function EndModal({ darkMode, finalScore, isNewBest, stats, isGuest, insights, insightsLoading, onPlayAgain, onDismiss, onSignIn }: EndModalProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss(); };
     window.addEventListener('keydown', handler);
@@ -33,12 +34,13 @@ export default function EndModal({ darkMode, finalScore, stats, isGuest, insight
         {/* Score */}
         <h2 className="text-2xl tracking-wide mb-3" style={{ fontFamily: 'KarnakPro' }}>GAME OVER</h2>
         <div className="text-xs tracking-widest text-gray-400 mb-2" style={{ fontFamily: 'NeueHelvetica' }}>FINAL SCORE</div>
-        <div className="text-6xl mb-2" style={{ fontFamily: 'NeueHelvetica' }}>{finalScore}</div>
-        {stats && (
-          <div className="text-xs text-gray-400 mb-5" style={{ fontFamily: 'NeueHelvetica' }}>
-            BEST <span className={darkMode ? 'text-white' : 'text-black'}>{stats.highScore}</span>
-          </div>
-        )}
+        <div className="text-6xl mb-3" style={{ fontFamily: 'NeueHelvetica' }}>{finalScore}</div>
+        <div className="mb-5">
+          {isNewBest
+            ? <span className="text-xs tracking-widest px-2 py-1 rounded-full bg-black text-white" style={{ fontFamily: 'NeueHelvetica' }}>NEW BEST</span>
+            : stats ? <span className="text-xs text-gray-400" style={{ fontFamily: 'NeueHelvetica' }}>BEST <span className={darkMode ? 'text-white' : 'text-black'}>{stats.highScore}</span></span> : null
+          }
+        </div>
 
         {/* Insights */}
         {(insightsLoading || insights.length > 0) && (
