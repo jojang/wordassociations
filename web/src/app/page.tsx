@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { Sun, Moon, LogIn, ChevronDown, BarChart2 } from 'lucide-react';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { supabase } from '@/lib/supabase';
-import { getProfile, getUserStats, getOddOneOutStats } from '@/lib/api';
-import type { OddOneOutStats } from '@/lib/api';
+import { getProfile, getUserStats, getOddOneOutStats, getChainStats } from '@/lib/api';
+import type { OddOneOutStats, ChainReactionStats } from '@/lib/api';
 
 type GameStats = { highScore: number; totalGames: number; avgScore: number };
 import AuthModal from '@/components/auth/AuthModal';
@@ -23,6 +23,11 @@ const GAMES = [
     title: 'Odd One Out',
     description: 'Find the word that doesn\'t belong. Five daily puzzles, increasing in difficulty.',
   },
+  {
+    slug: 'chain-reaction',
+    title: 'Chain Reaction',
+    description: 'Each word must start with the last letter of the previous — and be associated with it.',
+  },
 ];
 
 export default function Home() {
@@ -32,6 +37,7 @@ export default function Home() {
   const [username, setUsername] = useState<string | null>(null);
   const [stats, setStats] = useState<Record<string, GameStats>>({});
   const [ooStats, setOoStats] = useState<OddOneOutStats | null>(null);
+  const [crStats, setCrStats] = useState<ChainReactionStats | null>(null);
   const [showNudge, setShowNudge] = useState(false);
 
   const border = darkMode ? 'border-gray-800' : 'border-gray-100';
@@ -45,13 +51,15 @@ export default function Home() {
 
   const fetchAllStats = async (userId: string) => {
     const mapped: Record<string, GameStats> = {};
-    const [waData, ooData] = await Promise.all([
+    const [waData, ooData, crData] = await Promise.all([
       getUserStats(userId, 'word-associations'),
       getOddOneOutStats(userId),
+      getChainStats(userId),
     ]);
     if (waData) mapped['word-associations'] = { highScore: waData.high_score, totalGames: waData.total_games, avgScore: waData.avg_score };
     setStats(mapped);
     setOoStats(ooData);
+    setCrStats(crData);
   };
 
   useEffect(() => {
@@ -66,7 +74,7 @@ export default function Home() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) { fetchUsername(session.user.id); fetchAllStats(session.user.id); }
-      else { setUsername(null); setStats({}); setOoStats(null); }
+      else { setUsername(null); setStats({}); setOoStats(null); setCrStats(null); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -146,8 +154,10 @@ export default function Home() {
           {GAMES.map((game) => {
             const gameStats = stats[game.slug] ?? null;
             const isOoo = game.slug === 'odd-one-out';
-            const hasStats = isOoo ? !!ooStats : !!gameStats;
+            const isCr = game.slug === 'chain-reaction';
+            const hasStats = isOoo ? !!ooStats : isCr ? !!crStats : !!gameStats;
             const maxDist = ooStats ? Math.max(...ooStats.distribution, 1) : 1;
+            const totalPlays = isOoo ? ooStats?.total_games : isCr ? crStats?.total_games : gameStats?.totalGames;
 
             return (
               <div key={game.slug}>
@@ -164,7 +174,7 @@ export default function Home() {
                           <>
                             <div className="flex items-center justify-between mb-2" style={{ fontFamily: 'NeueHelvetica' }}>
                               <span className="text-xs tracking-widest text-gray-400">YOUR STATS</span>
-                              <span className="text-xs text-gray-400">{isOoo ? ooStats!.total_games : gameStats!.totalGames} {(isOoo ? ooStats!.total_games : gameStats!.totalGames) === 1 ? 'play' : 'plays'}</span>
+                              <span className="text-xs text-gray-400">{totalPlays} {totalPlays === 1 ? 'play' : 'plays'}</span>
                             </div>
                             <div className={`border-t mb-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`} />
                             {isOoo && ooStats ? (
@@ -184,6 +194,18 @@ export default function Home() {
                                   <span className="text-xs text-gray-400 w-3">{count}</span>
                                 </div>
                               ))
+                            ) : isCr && crStats ? (
+                              <>
+                                <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>
+                                  <span className="text-gray-400">Best</span><span>{crStats.high_score}</span>
+                                </div>
+                                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                                  <span className="text-gray-400">Avg</span><span>{crStats.avg_score}</span>
+                                </div>
+                                <div className="flex justify-between text-xs mt-1" style={{ fontFamily: 'NeueHelvetica' }}>
+                                  <span className="text-gray-400">Longest chain</span><span>{crStats.longest_chain}</span>
+                                </div>
+                              </>
                             ) : gameStats ? (
                               <>
                                 <div className="flex justify-between text-xs" style={{ fontFamily: 'NeueHelvetica' }}>

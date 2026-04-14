@@ -131,6 +131,57 @@ export async function completeOddOneOut(userId: string, score: number, date: str
   return data.stats ?? null;
 }
 
+// ─── Chain Reaction ───────────────────────────────────────────────────────────
+
+export interface ChainScoreResponse {
+  correct: boolean;
+  score: number;
+  similarity: number;
+  reason: 'correct' | 'bad_letter' | 'not_associated' | 'invalid';
+}
+
+export interface ChainReactionStats {
+  high_score: number;
+  total_games: number;
+  avg_score: number;
+  longest_chain: number;
+}
+
+export async function getChainWord(): Promise<string> {
+  const res = await fetch(`${API_BASE}/api/games/chain-reaction/word`);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  const data = await res.json();
+  return data.word;
+}
+
+export async function scoreChainGuess(currentWord: string, guess: string): Promise<ChainScoreResponse> {
+  const res = await fetch(`${API_BASE}/api/games/chain-reaction/score`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_word: currentWord, guess }),
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+export async function getChainStats(userId: string): Promise<ChainReactionStats | null> {
+  const res = await fetch(`${API_BASE}/api/games/chain-reaction/stats/${userId}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.stats ?? null;
+}
+
+export async function saveChainStats(userId: string, score: number, chainLength: number): Promise<ChainReactionStats | null> {
+  const res = await fetch(`${API_BASE}/api/games/chain-reaction/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId, score, chain_length: chainLength }),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.stats ?? null;
+}
+
 export async function saveUserStats(userId: string, game: string, score: number): Promise<GameStats | null> {
   const res = await fetch(`${API_BASE}/api/users/stats`, {
     method: 'POST',

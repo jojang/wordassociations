@@ -109,7 +109,7 @@ export default function Game() {
 
   const endGame = useCallback(async (final: number) => {
     setFinalScore(final);
-    setIsNewBest(!gameStats || final > gameStats.highScore);
+    setIsNewBest(!!user && (!gameStats || final > gameStats.highScore));
     setScore(0);
     setStrikes(STRIKES_MAX);
     setTimeLeft(TIMER_DURATION);
