@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 import anthropic
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
@@ -7,6 +8,7 @@ from sentence_transformers import util
 from wonderwords import RandomWord
 
 from ml.features import extract
+from lib.supabase import get_supabase
 
 router = APIRouter()
 
@@ -64,6 +66,23 @@ async def score_guess(request: Request, body: ScoreRequest):
                 correct = True
 
     score = round(similarity * 10000) if correct else 0
+
+    # Auto-write every rejection to word_feedback for ML training data
+    if not correct:
+        def _write():
+            try:
+                get_supabase().table("word_feedback").insert({
+                    "user_id": "system",
+                    "target_word": word,
+                    "guess_word": guess,
+                    "similarity_score": similarity,
+                    "model_decision": "rejected",
+                    "user_label": False,
+                    "model_version": "v0",
+                }).execute()
+            except Exception:
+                pass  # never block the game response
+        asyncio.get_event_loop().run_in_executor(None, _write)
 
     return {
         "correct": correct,

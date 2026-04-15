@@ -50,23 +50,27 @@ Base embedding model computes similarity score
                         │
                         └── P(accept) < 0.50 ──► rejected
                                 │
+                                ├──► auto-written to word_feedback (user_label=False)
+                                │    used as synthetic negatives for training
+                                │
                                 ▼
-                        Shown in End Modal
+                        Last failed word shown in End Modal
                         User can thumb-up: "Close enough?"
                                 │
                                 ▼
-                        Stored in word_feedback (Supabase)
+                        user_label updated to True in word_feedback
+                        becomes a positive training example
 ```
 
 ### Accept Threshold
 The calibrator uses the standard default of 0.50 — the model must consider a guess more likely valid than not before overriding the base rejection. Since false negatives (rejecting a valid guess) are more harmful to the player experience than false positives (accepting a weak one), the threshold should be tuned lower as labeled data grows, guided by the precision/recall tradeoff on the held-out validation set.
 
 ### Label Trust — Minimum Vote Threshold
-A guess only becomes a positive training example once **3 distinct users** have independently thumbed it up. Single-user votes are recorded but not used for training — this prevents individual users from corrupting the model and follows standard human-labeling practices (inter-rater agreement).
+A guess only becomes a positive training example once it has been independently thumbed up by at least `MIN_VOTES` distinct users. Currently set to **1** given early-stage traffic — designed to scale up to 3+ as the user base grows, following standard human-labeling practices (inter-rater agreement) to prevent individual users from corrupting the model.
 
 ### Training Data
-- **Positives** — `(target, guess)` pairs confirmed by 3+ distinct users
-- **Negatives** — pairs with similarity < 0.10 (objectively unrelated, safe to auto-label)
+- **Positives** — `(target, guess)` pairs confirmed by `MIN_VOTES`+ distinct users via thumbs-up
+- **Negatives** — every rejected guess is automatically written to `word_feedback` with `user_label = False`; pairs with similarity < 0.10 are used as synthetic negatives (objectively unrelated, safe to auto-label). Thumbed-up rows are excluded from negatives to prevent contradictions.
 - **Class balancing** — negatives are downsampled to match positive count, preventing the model from collapsing to the majority class
 
 ### Retraining

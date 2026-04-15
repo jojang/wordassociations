@@ -25,7 +25,7 @@ from lib.supabase import get_supabase
 
 # Minimum number of distinct users who must thumb-up a (target, guess) pair
 # before it's trusted as a positive training example.
-MIN_VOTES = 3
+MIN_VOTES = 1
 
 
 def _aggregate_positives(rows: list[dict]) -> list[dict]:
@@ -61,7 +61,8 @@ def load_dataset(neg_similarity_cutoff: float = 0.10, random_seed: int = 42):
     rows = sb.table("word_feedback").select("*").execute().data
 
     positives = _aggregate_positives(rows)
-    negatives = [r for r in rows if r.get("similarity_score", 1.0) < neg_similarity_cutoff]
+    negatives = [r for r in rows if r.get("similarity_score", 1.0) < neg_similarity_cutoff
+                 and r.get("user_label") is not True]
 
     # Balance classes — sample negatives down to match positive count
     random.seed(random_seed)
