@@ -6,9 +6,15 @@ from pydantic import BaseModel
 from sentence_transformers import util
 from wonderwords import RandomWord
 
+from ml.features import extract
+
 router = APIRouter()
 
 SIMILARITY_THRESHOLD = 0.30
+# Guesses below this floor are never overridden — too far off to reconsider
+CALIBRATOR_FLOOR = 0.20
+# Calibrator probability above which we override the rejection
+CALIBRATOR_ACCEPT_THRESHOLD = 0.50
 
 _random_word = RandomWord()
 
@@ -45,7 +51,18 @@ async def score_guess(request: Request, body: ScoreRequest):
 
     embeddings = model.encode([word, guess])
     similarity = float(util.cos_sim(embeddings[0], embeddings[1]))
+
     correct = similarity >= SIMILARITY_THRESHOLD
+
+    # Gray zone: base model rejects but calibrator gets a second opinion
+    if not correct and similarity >= CALIBRATOR_FLOOR:
+        calibrator = getattr(request.app.state, "calibrator", None)
+        if calibrator is not None:
+            features = extract({"target_word": word, "guess_word": guess, "similarity_score": similarity})
+            prob = calibrator.predict_proba([features])[0][1]
+            if prob >= CALIBRATOR_ACCEPT_THRESHOLD:
+                correct = True
+
     score = round(similarity * 10000) if correct else 0
 
     return {

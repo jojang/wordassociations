@@ -1,4 +1,5 @@
 import os
+import pickle
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -12,12 +13,23 @@ from sentence_transformers import SentenceTransformer
 from routes.games import word_associations, odd_one_out, chain_reaction
 from routes import users, feedback
 
+CALIBRATOR_PATH = Path(__file__).parent / "ml" / "model.pkl"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Loading embedding model...")
     app.state.model = SentenceTransformer("all-MiniLM-L6-v2")
     print("Model ready.")
+
+    if CALIBRATOR_PATH.exists():
+        with open(CALIBRATOR_PATH, "rb") as f:
+            app.state.calibrator = pickle.load(f)
+        print("Calibrator loaded.")
+    else:
+        app.state.calibrator = None
+        print("No calibrator found — using base threshold only.")
+
     yield
 
 
