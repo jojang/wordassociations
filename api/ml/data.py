@@ -51,7 +51,7 @@ def _aggregate_positives(rows: list[dict]) -> list[dict]:
     return positives
 
 
-def load_dataset(neg_similarity_cutoff: float = 0.10, random_seed: int = 42):
+def load_dataset(neg_similarity_cutoff: float = 0.20, random_seed: int = 42):
     """
     Returns (X, y) where:
       X — list of dicts with raw fields (target_word, guess_word, similarity_score, ...)
