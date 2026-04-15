@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, Fragment } from 'react';
+import { useEffect, useState, Fragment } from 'react';
+import { submitFeedback } from '@/lib/api';
 import Link from 'next/link';
 import type { GameStats } from './Game';
 import type { Insight } from '@/lib/api';
+
+type FeedbackGuess = { target: string; guess: string; similarity: number; roundId: number };
 
 interface EndModalProps {
   darkMode: boolean;
@@ -11,19 +14,41 @@ interface EndModalProps {
   isNewBest: boolean;
   stats: GameStats | null;
   isGuest: boolean;
+  userId: string | null;
   insights: Insight[];
   insightsLoading: boolean;
+  feedbackGuesses: FeedbackGuess[];
   onPlayAgain: () => void;
   onDismiss: () => void;
   onSignIn: () => void;
 }
 
-export default function EndModal({ darkMode, finalScore, isNewBest, stats, isGuest, insights, insightsLoading, onPlayAgain, onDismiss, onSignIn }: EndModalProps) {
+export default function EndModal({ darkMode, finalScore, isNewBest, stats, isGuest, userId, insights, insightsLoading, feedbackGuesses, onPlayAgain, onDismiss, onSignIn }: EndModalProps) {
+  const [thumbedUp, setThumbedUp] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onDismiss]);
+
+  const handleThumbUp = async (targetWord: string, guessWord: string) => {
+    const key = `${targetWord}:${guessWord}`;
+    if (thumbedUp.has(key)) return;
+    setThumbedUp(prev => new Set(prev).add(key));
+    if (userId) {
+      const match = feedbackGuesses.find(fg => fg.target === targetWord && fg.guess === guessWord);
+      await submitFeedback({
+        userId,
+        targetWord,
+        guessWord,
+        similarityScore: match?.similarity ?? 0,
+        modelDecision: 'rejected',
+        userLabel: true,
+        modelVersion: 'v0',
+      });
+    }
+  };
 
   const bg = darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black';
 
@@ -64,14 +89,32 @@ export default function EndModal({ darkMode, finalScore, isNewBest, stats, isGue
                   </div>
                   {/* Divider */}
                   <div className={`border-t mb-2 ${darkMode ? 'border-gray-800' : 'border-gray-100'}`} />
-                  {/* Guesses */}
-                  <div className="grid gap-y-1 mb-3" style={{ gridTemplateColumns: 'auto 1fr' }}>
-                    {(item.guesses ?? []).filter((g, j, arr) => arr.findIndex(x => x.guess === g.guess) === j).map((g, j) => (
-                      <Fragment key={j}>
-                        <span className={`text-xs pr-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontFamily: 'NeueHelvetica' }}>{g.guess}</span>
-                        <span className="text-xs text-gray-400" style={{ fontFamily: 'NeueHelvetica' }}>{g.insight}</span>
-                      </Fragment>
-                    ))}
+                  {/* Guesses with inline thumbs-up */}
+                  <div className="grid gap-y-1 mb-3" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
+                    {(item.guesses ?? []).filter((g, j, arr) => arr.findIndex(x => x.guess === g.guess) === j).map((g, j) => {
+                      const key = `${item.word}:${g.guess}`;
+                      const rated = thumbedUp.has(key);
+                      return (
+                        <Fragment key={j}>
+                          <span className={`text-xs pr-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontFamily: 'NeueHelvetica' }}>{g.guess}</span>
+                          <span className="text-xs text-gray-400" style={{ fontFamily: 'NeueHelvetica' }}>{g.insight}</span>
+                          {userId ? (
+                            <button
+                              onClick={() => handleThumbUp(item.word, g.guess)}
+                              disabled={rated}
+                              className={`relative group text-xs rounded-full border p-1 ml-3 transition-all duration-150 ${rated ? 'border-green-500' : `border-transparent ${darkMode ? 'hover:border-gray-500' : 'hover:border-gray-300'}`}`}
+                            >
+                              👍
+                              {!rated && (
+                                <div className="absolute right-0 bottom-full mb-1.5 text-xs bg-black text-white rounded-lg px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" style={{ fontFamily: 'NeueHelvetica' }}>
+                                  Close enough?
+                                </div>
+                              )}
+                            </button>
+                          ) : <span />}
+                        </Fragment>
+                      );
+                    })}
                   </div>
                   {/* Alternatives */}
                   {(item.alternatives ?? []).length > 0 && (
@@ -98,7 +141,7 @@ export default function EndModal({ darkMode, finalScore, isNewBest, stats, isGue
         {/* Primary action */}
         <button
           onClick={onPlayAgain}
-          className={`w-full py-2 rounded-full text-sm tracking-widest transition-colors mb-3 mt-6 ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}`}
+          className={`w-full py-2 rounded-full text-sm tracking-widest transition-colors mb-3 ${darkMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}`}
           style={{ fontFamily: 'NeueHelvetica' }}
         >
           PLAY AGAIN

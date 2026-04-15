@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer
 
 from routes.games import word_associations, odd_one_out, chain_reaction
-from routes import users
+from routes import users, feedback
 
 
 @asynccontextmanager
@@ -35,6 +35,7 @@ app.include_router(word_associations.router, prefix="/api/games/word-association
 app.include_router(odd_one_out.router, prefix="/api/games/odd-one-out", tags=["odd-one-out"])
 app.include_router(chain_reaction.router, prefix="/api/games/chain-reaction", tags=["chain-reaction"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(feedback.router, prefix="/api/feedback", tags=["feedback"])
 
 
 @app.get("/")

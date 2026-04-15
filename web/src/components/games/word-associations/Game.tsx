@@ -48,8 +48,12 @@ export default function Game() {
   const [showAuth, setShowAuth] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(false);
+  const [feedbackGuesses, setFeedbackGuesses] = useState<{ target: string; guess: string; similarity: number; roundId: number }[]>([]);
   const failedWordsRef = useRef<{ word: string; wrong_guesses: string[] }[]>([]);
   const currentWrongGuessesRef = useRef<string[]>([]);
+  // Separate flat ref for ML feedback — tracks all failed guesses with similarity scores
+  const failedGuessesRef = useRef<{ target: string; guess: string; similarity: number; roundId: number }[]>([]);
+  const currentRoundRef = useRef(0);
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
 
   const fetchUsername = async (userId: string) => {
@@ -76,6 +80,7 @@ export default function Game() {
   }, []);
 
   const fetchNextWord = useCallback(async () => {
+    currentRoundRef.current += 1;
     setLoading(true);
     setFetchingWord(true);
     try {
@@ -127,7 +132,10 @@ export default function Game() {
     }
     failedWordsRef.current = [];
     currentWrongGuessesRef.current = [];
-  }, [fetchNextWord, saveStats]);
+    setFeedbackGuesses([...failedGuessesRef.current]);
+    failedGuessesRef.current = [];
+    currentRoundRef.current = 0;
+  }, [fetchNextWord, saveStats, gameStats, user]);
 
   // Fetch first word when game starts
   useEffect(() => {
@@ -216,6 +224,7 @@ export default function Game() {
       } else {
         flashInput('error');
         currentWrongGuessesRef.current.push(trimmed);
+        failedGuessesRef.current.push({ target: currentWord, guess: trimmed, similarity: result.similarity, roundId: currentRoundRef.current });
         const newStrikes = strikes - 1;
         setStrikes(newStrikes);
         setGuess('');
@@ -280,8 +289,10 @@ export default function Game() {
           isNewBest={isNewBest}
           stats={gameStats}
           isGuest={!user}
+          userId={user?.id ?? null}
           insights={insights}
           insightsLoading={insightsLoading}
+          feedbackGuesses={feedbackGuesses}
           onPlayAgain={() => setShowEnd(false)}
           onDismiss={() => { setShowEnd(false); setStarted(false); }}
           onSignIn={() => { setShowEnd(false); setStarted(false); setShowAuth(true); }}

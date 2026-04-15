@@ -182,6 +182,34 @@ export async function saveChainStats(userId: string, score: number, chainLength:
   return data.stats ?? null;
 }
 
+// ─── ML Feedback ─────────────────────────────────────────────────────────────
+
+export interface FeedbackPayload {
+  userId: string;
+  targetWord: string;
+  guessWord: string;
+  similarityScore: number;
+  modelDecision: 'accepted' | 'rejected';
+  userLabel: boolean;
+  modelVersion: string;
+}
+
+export async function submitFeedback(payload: FeedbackPayload): Promise<void> {
+  await fetch(`${API_BASE}/api/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: payload.userId,
+      target_word: payload.targetWord,
+      guess_word: payload.guessWord,
+      similarity_score: payload.similarityScore,
+      model_decision: payload.modelDecision,
+      user_label: payload.userLabel,
+      model_version: payload.modelVersion,
+    }),
+  });
+}
+
 export async function saveUserStats(userId: string, game: string, score: number): Promise<GameStats | null> {
   const res = await fetch(`${API_BASE}/api/users/stats`, {
     method: 'POST',
