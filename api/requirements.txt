@@ -5,3 +5,4 @@ wonderwords==2.2.0
 sentence-transformers==3.0.1
 anthropic==0.40.0
 supabase==2.15.0
+scikit-learn==1.5.2
